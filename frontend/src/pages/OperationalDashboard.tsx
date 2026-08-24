@@ -1,4 +1,5 @@
 import React from 'react';
+import { Logo } from '../components/Logo';
 
 export const OperationalDashboard: React.FC = () => {
   return (
@@ -62,7 +63,7 @@ export const OperationalDashboard: React.FC = () => {
           <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs col-span-2 sm:col-span-1">
             <div className="flex justify-between items-center text-on-surface-variant">
               <span className="font-label-md text-label-md uppercase tracking-wider">Drones Available</span>
-              <span className="material-symbols-outlined text-[#10b981]" data-icon="precision_manufacturing">precision_manufacturing</span>
+              <Logo className="w-8 h-7 text-[#10b981] shrink-0" />
             </div>
             <div className="flex items-baseline gap-sm">
               <span className="font-headline-lg text-headline-lg text-on-surface">2</span>
