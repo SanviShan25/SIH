@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { Logo } from './Logo';
 
 interface SidebarProps {
   mobileOpen?: boolean;
@@ -43,11 +44,14 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
       >
         {/* Header / Logo */}
         <div className="px-lg pb-lg border-b border-outline-variant mb-md flex items-start justify-between">
-          <div>
-            <h1 className="font-display-lg text-headline-lg font-extrabold text-primary tracking-tight">
-              SKY GUARDIANS
-            </h1>
-            <p className="font-label-md text-label-md text-on-surface-variant mt-xs uppercase tracking-wider">
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center gap-2">
+              <Logo className="w-9 h-7 text-primary shrink-0" />
+              <h1 className="font-display-lg text-headline-lg font-extrabold text-primary tracking-tight">
+                SKY GUARDIANS
+              </h1>
+            </div>
+            <p className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">
               Disaster Management Authority
             </p>
           </div>
