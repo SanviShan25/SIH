@@ -1,0 +1,305 @@
+import React, { useState } from 'react';
+
+interface AlertItem {
+  id: string;
+  title: string;
+  severity: 'Critical' | 'Warning' | 'Info';
+  area: string;
+  time: string;
+  reach: string;
+  body: string;
+}
+
+const mockAlerts: AlertItem[] = [
+  {
+    id: 'ALT-1092',
+    title: 'Flash Flood Warning - Evacuate Zone 4',
+    severity: 'Critical',
+    area: 'Lower Basin / Sectors 11-14',
+    time: '14:15 UTC',
+    reach: '12,450 / 15,000 Recipients',
+    body: 'Immediate evacuation order issued for all residents within 500m of Lower Basin Riverbank due to rapid water surge.',
+  },
+  {
+    id: 'ALT-1091',
+    title: 'Road Inundation Advisory',
+    severity: 'Warning',
+    area: 'Sector 4 Highway Overpass',
+    time: '13:40 UTC',
+    reach: '3,200 / 3,500 Recipients',
+    body: 'Highway 4 impassable due to 1.2m water level. Heavy vehicular traffic diverted to Northern Ridge Bypass.',
+  },
+  {
+    id: 'ALT-1090',
+    title: 'Water & Ration Supply Restored',
+    severity: 'Info',
+    area: 'Camp Alpha Primary Shelter',
+    time: '11:20 UTC',
+    reach: '800 / 800 Recipients',
+    body: 'Fresh potable drinking water and emergency ration distribution is now active at Sector 14 Shelter.',
+  },
+];
+
+export const EmergencyAlertManagement: React.FC = () => {
+  const [selectedAlert, setSelectedAlert] = useState<AlertItem>(mockAlerts[0]);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'critical' | 'warning'>('all');
+  const [newTitle, setNewTitle] = useState('');
+  const [newBody, setNewBody] = useState('');
+  const [newSeverity, setNewSeverity] = useState('Critical (Red)');
+  const [newArea, setNewArea] = useState('Lower Basin (All Sectors)');
+
+  const filteredAlerts = mockAlerts.filter((a) => {
+    if (activeFilter === 'critical') return a.severity === 'Critical';
+    if (activeFilter === 'warning') return a.severity === 'Warning';
+    return true;
+  });
+
+  return (
+    <div className="flex flex-col lg:flex-row h-full min-h-[calc(100vh-64px)] w-full overflow-hidden bg-background">
+      {/* Left Pane: Alert History */}
+      <div className="w-full lg:w-[380px] xl:w-[440px] flex flex-col bg-surface-bright border-r border-outline-variant shrink-0 overflow-y-auto">
+        <div className="p-4 border-b border-outline-variant flex justify-between items-center bg-surface sticky top-0 z-10">
+          <div>
+            <h2 className="font-headline-md text-base font-bold text-on-surface">Emergency Broadcasts</h2>
+            <p className="text-xs text-on-surface-variant">Public Warning & Alert System</p>
+          </div>
+          <span className="px-2 py-0.5 bg-error-container text-error text-[11px] font-bold rounded">
+            {mockAlerts.length} Active
+          </span>
+        </div>
+
+        {/* Filter Chips */}
+        <div className="p-3 border-b border-outline-variant flex gap-2 bg-surface-container-low/50">
+          <button
+            onClick={() => setActiveFilter('all')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+              activeFilter === 'all'
+                ? 'bg-primary text-white'
+                : 'bg-surface border border-outline-variant text-on-surface-variant hover:bg-surface-container'
+            }`}
+          >
+            All Broadcasts
+          </button>
+          <button
+            onClick={() => setActiveFilter('critical')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+              activeFilter === 'critical'
+                ? 'bg-error text-white'
+                : 'bg-surface border border-outline-variant text-on-surface-variant hover:bg-surface-container'
+            }`}
+          >
+            Critical
+          </button>
+          <button
+            onClick={() => setActiveFilter('warning')}
+            className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+              activeFilter === 'warning'
+                ? 'bg-[#a33500] text-white'
+                : 'bg-surface border border-outline-variant text-on-surface-variant hover:bg-surface-container'
+            }`}
+          >
+            Warnings
+          </button>
+        </div>
+
+        {/* Alert List */}
+        <div className="divide-y divide-outline-variant">
+          {filteredAlerts.map((alert) => (
+            <div
+              key={alert.id}
+              onClick={() => setSelectedAlert(alert)}
+              className={`p-4 cursor-pointer transition-colors relative ${
+                selectedAlert.id === alert.id ? 'bg-surface-container-low' : 'hover:bg-surface-container-low/50'
+              }`}
+            >
+              {selectedAlert.id === alert.id && (
+                <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
+              )}
+              <div className="flex justify-between items-start mb-1">
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
+                    alert.severity === 'Critical'
+                      ? 'bg-error-container text-error'
+                      : alert.severity === 'Warning'
+                      ? 'bg-[#ffdbcf] text-[#7b2600]'
+                      : 'bg-primary-fixed text-primary'
+                  }`}
+                >
+                  {alert.severity}
+                </span>
+                <span className="font-mono text-[11px] text-on-surface-variant">{alert.time}</span>
+              </div>
+              <h3 className="font-bold text-xs text-on-surface line-clamp-1">{alert.title}</h3>
+              <p className="text-[11px] text-on-surface-variant mt-1 line-clamp-2">{alert.body}</p>
+              <div className="mt-2 flex items-center justify-between text-[11px] text-on-surface-variant font-mono">
+                <span>{alert.id}</span>
+                <span>{alert.reach}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Right Pane: Alert Details & Broadcast Dispatch */}
+      <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 flex flex-col gap-6">
+        {/* Selected Alert Breakdown Card */}
+        <section className="bg-surface border border-outline-variant rounded-xl p-5 shadow-xs">
+          <div className="flex flex-wrap justify-between items-start border-b border-outline-variant pb-3 gap-3">
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span
+                  className={`px-2 py-0.5 text-xs font-bold rounded ${
+                    selectedAlert.severity === 'Critical'
+                      ? 'bg-error text-white'
+                      : selectedAlert.severity === 'Warning'
+                      ? 'bg-[#a33500] text-white'
+                      : 'bg-primary text-white'
+                  }`}
+                >
+                  {selectedAlert.severity.toUpperCase()}
+                </span>
+                <span className="font-mono text-xs text-on-surface-variant">{selectedAlert.id}</span>
+              </div>
+              <h2 className="font-headline-md text-lg font-bold text-on-surface">{selectedAlert.title}</h2>
+              <p className="text-xs text-on-surface-variant mt-0.5">Target Area: {selectedAlert.area}</p>
+            </div>
+
+            <div className="text-right">
+              <span className="text-xs font-semibold text-on-surface-variant block">Audience Delivery</span>
+              <span className="font-mono text-base font-bold text-emerald-700">{selectedAlert.reach}</span>
+            </div>
+          </div>
+
+          <div className="mt-4 p-3 bg-surface-container-low rounded-lg border border-outline-variant">
+            <p className="text-xs font-mono text-on-surface whitespace-pre-wrap">{selectedAlert.body}</p>
+          </div>
+
+          {/* Delivery Channels */}
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+            <div className="p-2.5 rounded-lg border border-outline-variant bg-surface-bright flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-base">sms</span>
+                <span className="font-semibold text-on-surface">SMS Broadcast</span>
+              </div>
+              <span className="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
+            </div>
+
+            <div className="p-2.5 rounded-lg border border-outline-variant bg-surface-bright flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-base">smartphone</span>
+                <span className="font-semibold text-on-surface">App Push</span>
+              </div>
+              <span className="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
+            </div>
+
+            <div className="p-2.5 rounded-lg border border-outline-variant bg-surface-bright flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-base">radio</span>
+                <span className="font-semibold text-on-surface">Radio Frequency</span>
+              </div>
+              <span className="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
+            </div>
+          </div>
+        </section>
+
+        {/* Issue New Emergency Alert Form */}
+        <section className="bg-surface border border-outline-variant rounded-xl p-5 shadow-xs">
+          <div className="flex items-center gap-2 mb-4 border-b border-outline-variant pb-3">
+            <span className="material-symbols-outlined text-error text-xl">campaign</span>
+            <h3 className="font-headline-md text-base font-bold text-on-surface">Dispatch New Emergency Alert</h3>
+          </div>
+
+          <form className="flex flex-col gap-4 text-xs">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex flex-col gap-1">
+                <label className="font-semibold text-on-surface">Severity Level</label>
+                <select
+                  value={newSeverity}
+                  onChange={(e) => setNewSeverity(e.target.value)}
+                  className="bg-surface-container-lowest border border-outline-variant rounded-lg py-2 px-3 focus:border-primary focus:ring-1 focus:ring-primary h-9 text-xs"
+                >
+                  <option>Critical (Red)</option>
+                  <option>Warning (Orange)</option>
+                  <option>Info (Blue)</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-semibold text-on-surface">Target Area Group</label>
+                <select
+                  value={newArea}
+                  onChange={(e) => setNewArea(e.target.value)}
+                  className="bg-surface-container-lowest border border-outline-variant rounded-lg py-2 px-3 focus:border-primary focus:ring-1 focus:ring-primary h-9 text-xs"
+                >
+                  <option>Lower Basin (All Sectors)</option>
+                  <option>Upper Ridge Sector 4</option>
+                  <option>Central District Metro</option>
+                  <option>Custom Polygon Area...</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="font-semibold text-on-surface">Alert Headline</label>
+              <input
+                type="text"
+                value={newTitle}
+                onChange={(e) => setNewTitle(e.target.value)}
+                placeholder="e.g., Mandatory Evacuation Order for Sector 12"
+                className="bg-surface-container-lowest border border-outline-variant rounded-lg py-2 px-3 focus:border-primary focus:ring-1 focus:ring-primary text-xs"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="font-semibold text-on-surface">Message Instructions (SMS / Push)</label>
+              <textarea
+                value={newBody}
+                onChange={(e) => setNewBody(e.target.value)}
+                placeholder="Enter clear, actionable evacuation instructions, muster points, and safety routes..."
+                rows={4}
+                className="bg-surface-container-lowest border border-outline-variant rounded-lg py-2 px-3 font-mono focus:border-primary focus:ring-1 focus:ring-primary resize-none text-xs"
+              />
+              <span className="text-[10px] text-on-surface-variant self-end font-mono">
+                {newBody.length} / 160 chars
+              </span>
+            </div>
+
+            {/* Channels Checkboxes */}
+            <div className="border-t border-outline-variant pt-3 flex flex-wrap gap-4 items-center">
+              <span className="font-semibold text-on-surface">Distribution Channels:</span>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" defaultChecked className="rounded border-outline-variant text-primary" />
+                <span>SMS Direct</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" defaultChecked className="rounded border-outline-variant text-primary" />
+                <span>App Push Notification</span>
+              </label>
+              <label className="flex items-center gap-1.5 cursor-pointer">
+                <input type="checkbox" className="rounded border-outline-variant text-primary" />
+                <span>Emergency Broadcast Radio</span>
+              </label>
+            </div>
+
+            {/* Buttons */}
+            <div className="flex justify-end gap-3 mt-2">
+              <button
+                type="button"
+                className="px-4 py-2 border border-outline-variant bg-surface text-on-surface font-bold rounded-lg hover:bg-surface-container transition-colors"
+              >
+                Draft / Simulate
+              </button>
+              <button
+                type="button"
+                className="px-4 py-2 bg-error text-white font-bold rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-xs"
+              >
+                <span className="material-symbols-outlined text-base">send</span>
+                Deploy Emergency Alert
+              </button>
+            </div>
+          </form>
+        </section>
+      </div>
+    </div>
+  );
+};
