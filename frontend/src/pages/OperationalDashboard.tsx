@@ -165,7 +165,7 @@ export const OperationalDashboard: React.FC = () => {
             {/* Infrastructure Markers */}
             <div className="absolute top-[40%] left-[45%] flex flex-col items-center cursor-pointer">
               <div className="bg-[#f59e0b] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm border border-white flex items-center gap-0.5">
-                <span className="material-symbols-outlined text-[11px]">bridge</span> Bridge B-02 (Risk)
+                <span className="material-symbols-outlined text-[11px]">deck</span> Bridge B-02 (Risk)
               </div>
             </div>
 
@@ -210,7 +210,7 @@ export const OperationalDashboard: React.FC = () => {
                   <span className="material-symbols-outlined text-[16px]" data-icon="warning">warning</span>
                   CRITICAL ALERT
                 </span>
-                <span className="font-label-md text-label-md text-on-surface-variant">14:32</span>
+                <span className="font-label-md text-label-md text-on-surface-variant shrink-0">14:32</span>
               </div>
               <h3 className="font-body-md text-body-md font-semibold text-on-surface">NEW IMPACTED ZONE DETECTED</h3>
               <div className="font-data-mono text-data-mono text-on-surface-variant text-sm">
@@ -228,10 +228,10 @@ export const OperationalDashboard: React.FC = () => {
           <div className="border border-outline-variant rounded-lg bg-surface-bright p-md flex flex-col gap-sm">
             <div className="flex justify-between items-start">
               <span className="font-label-md text-label-md text-tertiary-container flex items-center gap-xs font-bold">
-                <span className="material-symbols-outlined text-[16px]" data-icon="bridge">bridge</span>
+                <span className="material-symbols-outlined text-[16px]" data-icon="deck">deck</span>
                 INFRASTRUCTURE RISK
               </span>
-              <span className="font-label-md text-label-md text-on-surface-variant">14:20</span>
+              <span className="font-label-md text-label-md text-on-surface-variant shrink-0">14:20</span>
             </div>
             <h3 className="font-body-md text-body-md text-on-surface">Bridge B-02: Flow shear 12k m³/s exceeding baseline.</h3>
           </div>
@@ -243,7 +243,7 @@ export const OperationalDashboard: React.FC = () => {
                 <span className="material-symbols-outlined text-[16px]" data-icon="alt_route">alt_route</span>
                 ROAD ACCESS UPDATE
               </span>
-              <span className="font-label-md text-label-md text-on-surface-variant">13:45</span>
+              <span className="font-label-md text-label-md text-on-surface-variant shrink-0">13:45</span>
             </div>
             <h3 className="font-body-md text-body-md text-on-surface">Highway 4 blocked by debris. North Ring Corridor open.</h3>
           </div>

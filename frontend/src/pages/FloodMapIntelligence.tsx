@@ -101,7 +101,7 @@ export const FloodMapIntelligence: React.FC = () => {
                     : 'bg-error text-white'
                 }`}>
                   <span className="material-symbols-outlined text-[12px]">
-                    {item.type === 'Bridge' ? 'bridge' : item.type === 'Hospital' ? 'local_hospital' : 'domain'}
+                    {item.type === 'Bridge' ? 'deck' : item.type === 'Hospital' ? 'local_hospital' : 'domain'}
                   </span>
                   {item.name}: {item.status}
                 </div>
