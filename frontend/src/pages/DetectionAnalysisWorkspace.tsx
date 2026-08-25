@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { getLatestDetections } from '../api/disasterApi';
+import { getLatestDetections, triggerAiInference } from '../api/disasterApi';
+import { getSocket } from '../api/socketClient';
 
 export const DetectionAnalysisWorkspace: React.FC = () => {
   const [showBoundingBoxes, setShowBoundingBoxes] = useState(true);
   const [detectionsData, setDetectionsData] = useState<any>(null);
+  const [isScanning, setIsScanning] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -18,12 +20,41 @@ export const DetectionAnalysisWorkspace: React.FC = () => {
       }
     }
     loadData();
-    return () => { isMounted = false; };
+
+    const socket = getSocket();
+    socket.on('detection:new', (newFrame) => {
+      if (isMounted) {
+        setDetectionsData(newFrame);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      socket.off('detection:new');
+    };
   }, []);
 
-  const victimsCount = detectionsData?.detections?.filter((d: any) => d.type === 'person').length || 7;
-  const boatsCount = detectionsData?.detections?.filter((d: any) => d.type === 'boat').length || 2;
-  const vehiclesCount = detectionsData?.detections?.filter((d: any) => d.type === 'vehicle').length || 3;
+  const handleRunAiScan = async () => {
+    setIsScanning(true);
+    try {
+      const result = await triggerAiInference({ missionId: 'MISSION-DRONE-001', scanType: 'YOLOv8-Disaster Vision' });
+      setDetectionsData(result);
+    } catch (err) {
+      console.error('Failed to run AI inference:', err);
+    } finally {
+      setTimeout(() => setIsScanning(false), 800);
+    }
+  };
+
+  const detectionsList = detectionsData?.detections || [
+    { id: '1', class: 'Person', type: 'person', confidence: 0.94, bbox: { top: '30%', left: '45%', width: '48px', height: '68px' } },
+    { id: '2', class: 'Rescue Boat', type: 'boat', confidence: 0.96, bbox: { top: '40%', left: '20%', width: '130px', height: '55px' } },
+    { id: '3', class: 'Submerged Vehicle', type: 'vehicle', confidence: 0.88, bbox: { top: '60%', right: '30%', width: '90px', height: '75px' } },
+  ];
+
+  const victimsCount = detectionsList.filter((d: any) => d.type === 'person').length;
+  const boatsCount = detectionsList.filter((d: any) => d.type === 'boat').length;
+  const vehiclesCount = detectionsList.filter((d: any) => d.type === 'vehicle').length;
 
   return (
     <div className="p-4 md:p-6 lg:p-xl w-full min-h-full flex flex-col gap-6">
@@ -31,23 +62,29 @@ export const DetectionAnalysisWorkspace: React.FC = () => {
       <div className="flex flex-wrap justify-between items-end gap-4">
         <div>
           <h1 className="font-headline-lg text-2xl md:text-headline-lg text-on-surface font-bold">
-            Detection & Analysis Workspace
+            Detection &amp; Analysis Workspace
           </h1>
           <p className="font-body-md text-sm text-on-surface-variant mt-1">
-            Sector 12 · DRONE-001 · AI Vision Model: <span className="font-mono font-semibold">YOLOv8-Disaster-v4.2</span>
+            Sector 12 · DRONE-001 · AI Vision Model: <span className="font-mono font-semibold text-primary">YOLOv8-Disaster-v4.2</span>
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
+            onClick={handleRunAiScan}
+            disabled={isScanning}
+            className="px-md py-sm bg-primary-container text-on-primary rounded-lg font-label-md text-xs font-semibold flex items-center gap-1.5 hover:bg-primary transition-colors shadow-xs cursor-pointer disabled:opacity-50"
+          >
+            <span className={`material-symbols-outlined text-base ${isScanning ? 'animate-spin' : ''}`}>
+              {isScanning ? 'sync' : 'auto_awesome'}
+            </span>
+            {isScanning ? 'Processing Inference...' : 'Run YOLOv8 AI Scan'}
+          </button>
+          <button
             onClick={() => setShowBoundingBoxes((prev) => !prev)}
-            className="px-md py-sm bg-surface border border-outline-variant rounded-lg font-label-md text-xs font-semibold text-on-surface flex items-center gap-1.5 hover:bg-surface-container transition-colors shadow-xs"
+            className="px-md py-sm bg-surface border border-outline-variant rounded-lg font-label-md text-xs font-semibold text-on-surface flex items-center gap-1.5 hover:bg-surface-container transition-colors shadow-xs cursor-pointer"
           >
             <span className="material-symbols-outlined text-base">filter_list</span>
             {showBoundingBoxes ? 'Hide Overlays' : 'Show Overlays'}
-          </button>
-          <button className="px-md py-sm bg-primary-container text-on-primary rounded-lg font-label-md text-xs font-semibold flex items-center gap-1.5 hover:bg-primary transition-colors shadow-xs">
-            <span className="material-symbols-outlined text-base">download</span>
-            Export Annotated Frame
           </button>
         </div>
       </div>
@@ -59,9 +96,9 @@ export const DetectionAnalysisWorkspace: React.FC = () => {
           <div className="px-3 py-2 border-b border-outline-variant bg-surface rounded-t-lg flex justify-between items-center z-10">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span className="font-label-md text-xs text-on-surface font-bold">MISSION FOOTAGE (RECORDED)</span>
+              <span className="font-label-md text-xs text-on-surface font-bold">MISSION FOOTAGE (AI VISION ENHANCED)</span>
             </div>
-            <span className="font-data-mono text-xs text-on-surface-variant">REC 00:14:32:05 · HD 1080P</span>
+            <span className="font-data-mono text-xs text-on-surface-variant">REC 00:14:32:05 · HD 1080P · YOLOv8 CONF: 94.2%</span>
           </div>
 
           <div className="relative flex-1 bg-inverse-surface w-full min-h-[380px] overflow-hidden rounded-lg mt-2">
@@ -72,39 +109,54 @@ export const DetectionAnalysisWorkspace: React.FC = () => {
               src="https://lh3.googleusercontent.com/aida-public/AB6AXuAuWBn-OvaKI4G019GpMSeEw6JfjDjpMZdlgKq4sI9jb9kO9ZzZYpMCI6_b0yKBCNgLU6fPAfq4UPHx5kfw2TOnPHPTZZWO5P07BZlYJtONa8biKbG9YNDETWfxgGUFzflKPK4LLpXVhNJFWCKhJY49SLGJ3uZFn_n0dbyhumLlX8pcAQKASwa0Slj2Tz9aTIhy2f714EspXnFSg6Prjg_dmU26gdwFoETUsk2Nd_Vd-SN75hK3vt4i"
             />
 
+            {/* Scanning Beam Animation */}
+            {isScanning && (
+              <div className="absolute inset-0 bg-primary/10 pointer-events-none flex flex-col justify-between">
+                <div className="w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent shadow-[0_0_15px_#22d3ee] animate-bounce" />
+                <div className="text-center font-mono font-bold text-xs text-cyan-300 pb-4 tracking-widest uppercase">
+                  ⚡ Executing Neural Feature Extraction...
+                </div>
+              </div>
+            )}
+
             {/* Bounding Boxes Overlay */}
             {showBoundingBoxes && (
               <div className="absolute inset-0 pointer-events-none">
-                {/* Person Detection */}
-                <div className="absolute top-[30%] left-[45%] w-[48px] h-[68px] border-2 border-error bg-error/15 rounded-xs animate-pulse">
-                  <div className="absolute -top-[22px] -left-[2px] bg-error text-white px-1.5 py-0.5 text-[10px] font-mono font-bold whitespace-nowrap rounded-t-xs shadow-xs">
-                    Person - 94%
-                  </div>
-                </div>
+                {detectionsList.map((d: any, idx: number) => {
+                  const isPerson = d.type === 'person' || d.class === 'Person';
+                  const isBoat = d.type === 'boat' || d.class.includes('Boat');
+                  const borderCol = isPerson ? 'border-error bg-error/15 text-error' : isBoat ? 'border-primary bg-primary/15 text-primary' : 'border-[#a33500] bg-[#a33500]/15 text-[#a33500]';
+                  const badgeBg = isPerson ? 'bg-error text-white' : isBoat ? 'bg-primary text-white' : 'bg-[#a33500] text-white';
 
-                {/* Rescue Boat Detection */}
-                <div className="absolute top-[40%] left-[20%] w-[130px] h-[55px] border-2 border-primary-container bg-primary-container/15 rounded-xs">
-                  <div className="absolute -top-[22px] -left-[2px] bg-primary-container text-white px-1.5 py-0.5 text-[10px] font-mono font-bold whitespace-nowrap rounded-t-xs shadow-xs">
-                    Rescue Boat - 96%
-                  </div>
-                </div>
-
-                {/* Submerged Vehicle Detection */}
-                <div className="absolute top-[60%] right-[30%] w-[90px] h-[75px] border-2 border-[#a33500] bg-[#a33500]/15 rounded-xs">
-                  <div className="absolute -top-[22px] -left-[2px] bg-[#a33500] text-white px-1.5 py-0.5 text-[10px] font-mono font-bold whitespace-nowrap rounded-t-xs shadow-xs">
-                    Vehicle - 88%
-                  </div>
-                </div>
+                  return (
+                    <div
+                      key={d.id || idx}
+                      style={{
+                        position: 'absolute',
+                        top: d.bbox?.top,
+                        left: d.bbox?.left,
+                        right: d.bbox?.right,
+                        width: d.bbox?.width,
+                        height: d.bbox?.height,
+                      }}
+                      className={`border-2 ${borderCol} rounded-xs animate-pulse`}
+                    >
+                      <div className={`absolute -top-[20px] -left-[2px] ${badgeBg} px-1.5 py-0.5 text-[9px] font-mono font-bold whitespace-nowrap rounded-t-xs shadow-xs`}>
+                        {d.class} - {Math.round((d.confidence || 0.9) * 100)}%
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
             {/* Telemetry HUD Overlay (Bottom) */}
             <div className="absolute bottom-3 left-3 right-3 flex flex-wrap justify-between items-center text-white font-data-mono text-[11px] bg-on-background/70 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/10 gap-2">
-              <span>LAT: 34.0522° N</span>
-              <span>LONG: 118.2437° W</span>
+              <span>LAT: 28.6139° N</span>
+              <span>LONG: 77.2090° E</span>
               <span>ALT: 82.4m AGL</span>
               <span>SPD: 14.2 m/s</span>
-              <span>CONFIDENCE: 92.8%</span>
+              <span>CONFIDENCE: 94.2%</span>
             </div>
           </div>
         </div>

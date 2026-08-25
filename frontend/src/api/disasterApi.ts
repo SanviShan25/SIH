@@ -260,6 +260,13 @@ export async function getLatestDetections() {
   }
 }
 
+export async function triggerAiInference(payload?: { missionId?: string; scanType?: string }) {
+  return await fetchApi<any>('/detections/analyze', {
+    method: 'POST',
+    body: JSON.stringify(payload || { missionId: 'MISSION-DRONE-001' }),
+  });
+}
+
 // 9. Field Units
 export async function getFieldUnits() {
   try {
