@@ -1,8 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { getSocket } from '../api/socketClient';
+import { createDroneMission } from '../api/disasterApi';
 
 export const DroneMissionControl: React.FC = () => {
   const [activeMediaTab, setActiveMediaTab] = useState<'all' | 'images' | 'videos'>('all');
+  const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [targetArea, setTargetArea] = useState('Sector 12 Riverbend Recon');
+  const [droneId, setDroneId] = useState('DRONE-002');
+  const [flightMode, setFlightMode] = useState('AUTONOMOUS RECON');
+  const [assignedAltitude, setAssignedAltitude] = useState(120);
+
   const [telemetry, setTelemetry] = useState<any>({
     battery: 84,
     altitude: 120,
@@ -27,6 +35,24 @@ export const DroneMissionControl: React.FC = () => {
     };
   }, []);
 
+  const handleCreateMission = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    try {
+      await createDroneMission({
+        droneId,
+        targetArea,
+        altitudeM: Number(assignedAltitude),
+        flightMode,
+      });
+      setShowModal(false);
+    } catch (err) {
+      console.error('Failed to create mission:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 lg:p-xl w-full min-h-full flex flex-col gap-6">
       {/* Header Row */}
@@ -37,7 +63,10 @@ export const DroneMissionControl: React.FC = () => {
             Sector 12 Aerial Reconnaissance &amp; Telemetry
           </p>
         </div>
-        <button className="bg-primary-container text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md flex items-center gap-sm hover:bg-primary transition-colors shadow-xs cursor-pointer">
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-primary-container text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md flex items-center gap-sm hover:bg-primary transition-colors shadow-xs cursor-pointer"
+        >
           <span className="material-symbols-outlined text-[18px]">add</span>
           New Mission
         </button>
@@ -263,6 +292,95 @@ export const DroneMissionControl: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* New Mission Dispatch Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+          <div className="bg-surface border border-outline-variant rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-4 text-xs">
+            <div className="flex justify-between items-center border-b border-outline-variant pb-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-xl">precision_manufacturing</span>
+                <h3 className="font-headline-md text-base font-bold text-on-surface">Dispatch New Drone Mission</h3>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-on-surface-variant hover:text-on-surface cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateMission} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="font-semibold text-on-surface">Assign Drone Asset</label>
+                <select
+                  value={droneId}
+                  onChange={(e) => setDroneId(e.target.value)}
+                  className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                >
+                  <option value="DRONE-001">DRONE-001 (Matrice 300 RTK - Active)</option>
+                  <option value="DRONE-002">DRONE-002 (Inspire 3 - Standby 98% Batt)</option>
+                  <option value="DRONE-003">DRONE-003 (Mavic 3 Thermal - Standby 100%)</option>
+                </select>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-semibold text-on-surface">Target Sector / Recon Area</label>
+                <input
+                  type="text"
+                  required
+                  value={targetArea}
+                  onChange={(e) => setTargetArea(e.target.value)}
+                  placeholder="e.g., Sector 14 Dam Approach & Embankment"
+                  className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-on-surface">Assigned Altitude (AGL)</label>
+                  <input
+                    type="number"
+                    value={assignedAltitude}
+                    onChange={(e) => setAssignedAltitude(Number(e.target.value))}
+                    className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-on-surface">Flight Mode</label>
+                  <select
+                    value={flightMode}
+                    onChange={(e) => setFlightMode(e.target.value)}
+                    className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                  >
+                    <option>AUTONOMOUS RECON</option>
+                    <option>THERMAL SEARCH &amp; RESCUE</option>
+                    <option>FLOOD DEPTH LIDAR MAPPING</option>
+                    <option>MANUAL PILOT OVERRIDE</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-outline-variant">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-primary hover:bg-primary/90 text-on-primary font-bold px-4 py-2 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {submitting ? 'Launching...' : 'Initialize & Launch Mission'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

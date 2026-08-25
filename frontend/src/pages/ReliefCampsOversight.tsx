@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getReliefCamps } from '../api/disasterApi';
+import { getReliefCamps, createReliefCamp, updateReliefCamp } from '../api/disasterApi';
 import { getSocket } from '../api/socketClient';
 
 interface Camp {
@@ -23,6 +23,18 @@ export const ReliefCampsOversight: React.FC = () => {
   const [camps, setCamps] = useState<Camp[]>([]);
   const [metrics, setMetrics] = useState<any>(null);
 
+  // Modal State
+  const [showModal, setShowModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newLocation, setNewLocation] = useState('');
+  const [newCapacity, setNewCapacity] = useState(500);
+  const [newOccupancy, setNewOccupancy] = useState(120);
+  const [newPersonnel, setNewPersonnel] = useState(15);
+  const [newFoodDays, setNewFoodDays] = useState('5 Days');
+  const [newWaterDays, setNewWaterDays] = useState('5 Days');
+  const [newMeds, setNewMeds] = useState<'Ok' | 'Adequate' | 'Low'>('Ok');
+
   useEffect(() => {
     let isMounted = true;
     async function loadData() {
@@ -45,11 +57,59 @@ export const ReliefCampsOversight: React.FC = () => {
       }
     });
 
+    socket.on('camp:created', (newCamp) => {
+      if (isMounted) {
+        setCamps((prev) => [newCamp, ...prev]);
+      }
+    });
+
     return () => {
       isMounted = false;
       socket.off('camp:status-change');
+      socket.off('camp:created');
     };
   }, [filter, search]);
+
+  const handleRegisterCamp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newName.trim() || !newLocation.trim()) return;
+
+    setSubmitting(true);
+    try {
+      const created = await createReliefCamp({
+        name: newName,
+        location: newLocation,
+        capacity: Number(newCapacity),
+        occupancy: Number(newOccupancy),
+        personnel: Number(newPersonnel),
+        foodDays: newFoodDays,
+        waterDays: newWaterDays,
+        medsStatus: newMeds,
+      });
+
+      setCamps((prev) => [created, ...prev]);
+      setShowModal(false);
+      setNewName('');
+      setNewLocation('');
+    } catch (err) {
+      console.error('Failed to register camp:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleReplenishSupplies = async (campId: string) => {
+    try {
+      const updated = await updateReliefCamp(campId, {
+        foodDays: '10+ Days',
+        waterDays: '10+ Days',
+        medsStatus: 'Adequate',
+      });
+      setCamps((prev) => prev.map((c) => (c.id === campId ? { ...c, ...updated } : c)));
+    } catch (err) {
+      console.error('Failed to replenish camp supplies:', err);
+    }
+  };
 
   const filteredCamps = camps.filter((c) => {
     const matchesFilter = filter === 'all' || c.status.toLowerCase() === filter.toLowerCase();
@@ -81,28 +141,31 @@ export const ReliefCampsOversight: React.FC = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search camp..."
-            className="bg-surface border border-outline-variant rounded-lg px-3 py-2 text-xs text-on-surface focus:border-primary focus:outline-none"
+            className="bg-surface border border-outline-variant rounded-lg px-3 py-2 text-xs text-on-surface focus:border-primary focus:outline-none shadow-xs"
           />
 
-          <div className="relative min-w-[200px]">
+          <div className="relative min-w-[180px]">
             <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="w-full appearance-none bg-surface border border-outline-variant rounded-lg pl-4 pr-10 py-2 font-body-md text-xs md:text-sm text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all cursor-pointer shadow-xs"
+              className="w-full appearance-none bg-surface border border-outline-variant rounded-lg pl-3 pr-8 py-2 font-body-md text-xs text-on-surface focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary cursor-pointer shadow-xs"
             >
-              <option value="all">Capacity Status: All</option>
-              <option value="critical">Critical (&gt;90%)</option>
-              <option value="warning">Warning (75-90%)</option>
-              <option value="stable">Stable (&lt;75%)</option>
+              <option value="all">Status: All ({camps.length})</option>
+              <option value="critical">Critical ({criticalCamps})</option>
+              <option value="warning">Warning</option>
+              <option value="stable">Stable</option>
             </select>
-            <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-base">
+            <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-base">
               expand_more
             </span>
           </div>
 
-          <button className="bg-primary hover:bg-primary/90 text-on-primary font-label-md text-xs font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer">
+          <button
+            onClick={() => setShowModal(true)}
+            className="bg-primary hover:bg-primary/90 text-on-primary font-label-md text-xs font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+          >
             <span className="material-symbols-outlined text-base">add</span>
-            Register New Camp
+            Register Camp
           </button>
         </div>
       </div>
@@ -110,7 +173,7 @@ export const ReliefCampsOversight: React.FC = () => {
       {/* Bento Grid of Camp Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredCamps.map((camp) => {
-          const occupancyRate = Math.round((camp.occupancy / camp.capacity) * 100);
+          const occupancyRate = Math.round((camp.occupancy / (camp.capacity || 1)) * 100);
 
           return (
             <div
@@ -143,8 +206,8 @@ export const ReliefCampsOversight: React.FC = () => {
                     camp.status === 'Critical'
                       ? 'bg-error-container text-error border border-error/30 animate-pulse'
                       : camp.status === 'Warning'
-                      ? 'bg-tertiary-fixed text-on-tertiary-fixed-variant border border-tertiary-container/30'
-                      : 'bg-primary-container/10 text-primary border border-primary/20'
+                      ? 'bg-tertiary-container/10 text-tertiary-container border border-tertiary-container/30'
+                      : 'bg-primary/10 text-primary border border-primary/20'
                   }`}
                 >
                   <span className="material-symbols-outlined text-[14px]">
@@ -181,7 +244,7 @@ export const ReliefCampsOversight: React.FC = () => {
                           ? 'bg-tertiary-container'
                           : 'bg-primary'
                       }`}
-                      style={{ width: `${occupancyRate}%` }}
+                      style={{ width: `${Math.min(occupancyRate, 100)}%` }}
                     />
                   </div>
                   <p className="text-[11px] text-on-surface-variant mt-1 font-mono">
@@ -228,7 +291,7 @@ export const ReliefCampsOversight: React.FC = () => {
                   </div>
                 </div>
 
-                {/* Footer */}
+                {/* Footer with Replenish Action */}
                 <div className="flex items-center justify-between border-t border-surface-variant pt-3 mt-auto text-xs">
                   <div className="flex items-center gap-1.5 text-on-surface-variant">
                     <span className="material-symbols-outlined text-secondary text-[16px]">group</span>
@@ -236,15 +299,156 @@ export const ReliefCampsOversight: React.FC = () => {
                       Personnel: <strong className="text-on-surface">{camp.personnel}</strong>
                     </span>
                   </div>
-                  <button className="font-bold text-primary hover:text-primary-container transition-colors flex items-center gap-1">
-                    Details <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-                  </button>
+                  {(camp.foodCritical || camp.waterCritical || camp.status === 'Critical') ? (
+                    <button
+                      onClick={() => handleReplenishSupplies(camp.id)}
+                      className="font-bold text-emerald-700 hover:text-emerald-800 transition-colors flex items-center gap-1 bg-emerald-100/60 px-2 py-0.5 rounded cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[13px]">local_shipping</span> Replenish
+                    </button>
+                  ) : (
+                    <span className="text-emerald-600 font-semibold flex items-center gap-0.5 text-[11px]">
+                      <span className="material-symbols-outlined text-[14px]">check</span> Stocked
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
           );
         })}
       </div>
+
+      {/* Register New Relief Camp Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+          <div className="bg-surface border border-outline-variant rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-4 text-xs">
+            <div className="flex justify-between items-center border-b border-outline-variant pb-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-xl">home</span>
+                <h3 className="font-headline-md text-base font-bold text-on-surface">Register New Relief Camp</h3>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="text-on-surface-variant hover:text-on-surface cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleRegisterCamp} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="font-semibold text-on-surface">Camp / Shelter Name</label>
+                <input
+                  type="text"
+                  required
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="e.g., Sector 16 Stadium Shelter"
+                  className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-semibold text-on-surface">Location / Address</label>
+                <input
+                  type="text"
+                  required
+                  value={newLocation}
+                  onChange={(e) => setNewLocation(e.target.value)}
+                  placeholder="e.g., North District Sports Complex"
+                  className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-on-surface">Total Capacity</label>
+                  <input
+                    type="number"
+                    value={newCapacity}
+                    onChange={(e) => setNewCapacity(Number(e.target.value))}
+                    className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-on-surface">Occupancy</label>
+                  <input
+                    type="number"
+                    value={newOccupancy}
+                    onChange={(e) => setNewOccupancy(Number(e.target.value))}
+                    className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-on-surface">Personnel (Staff)</label>
+                  <input
+                    type="number"
+                    value={newPersonnel}
+                    onChange={(e) => setNewPersonnel(Number(e.target.value))}
+                    className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-on-surface">Food Reserve</label>
+                  <select
+                    value={newFoodDays}
+                    onChange={(e) => setNewFoodDays(e.target.value)}
+                    className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                  >
+                    <option>7+ Days</option>
+                    <option>5 Days</option>
+                    <option>2 Days (Critical)</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-on-surface">Water Reserve</label>
+                  <select
+                    value={newWaterDays}
+                    onChange={(e) => setNewWaterDays(e.target.value)}
+                    className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                  >
+                    <option>7+ Days</option>
+                    <option>5 Days</option>
+                    <option>2 Days (Critical)</option>
+                  </select>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-on-surface">Meds Status</label>
+                  <select
+                    value={newMeds}
+                    onChange={(e) => setNewMeds(e.target.value as any)}
+                    className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                  >
+                    <option value="Adequate">Adequate</option>
+                    <option value="Ok">Ok</option>
+                    <option value="Low">Low</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-outline-variant">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-primary hover:bg-primary/90 text-on-primary font-bold px-4 py-2 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {submitting ? 'Registering...' : 'Save & Register Camp'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

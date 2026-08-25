@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getFieldUnits } from '../api/disasterApi';
+import { getFieldUnits, deployFieldUnit, updateFieldUnitStatus } from '../api/disasterApi';
 import { getSocket } from '../api/socketClient';
 
 interface Unit {
@@ -14,6 +14,14 @@ interface Unit {
 export const RescueCoordination: React.FC = () => {
   const [units, setUnits] = useState<Unit[]>([]);
   const [activeDeployed, setActiveDeployed] = useState(4);
+
+  // Modal State
+  const [showDeployModal, setShowDeployModal] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [unitName, setUnitName] = useState('');
+  const [unitType, setUnitType] = useState('Swiftwater Rescue Squad');
+  const [unitLocation, setUnitLocation] = useState('Sector 12 Riverbank');
+  const [personnelCount, setPersonnelCount] = useState(8);
 
   useEffect(() => {
     let isMounted = true;
@@ -32,7 +40,10 @@ export const RescueCoordination: React.FC = () => {
 
     const socket = getSocket();
     socket.on('unit:deployed', (newUnit) => {
-      if (isMounted) setUnits((prev) => [...prev, newUnit]);
+      if (isMounted) {
+        setUnits((prev) => [...prev, newUnit]);
+        setActiveDeployed((prev) => prev + 1);
+      }
     });
 
     socket.on('unit:updated', (updatedUnit) => {
@@ -46,6 +57,41 @@ export const RescueCoordination: React.FC = () => {
     };
   }, []);
 
+  const handleDeployUnit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!unitName.trim()) return;
+
+    setSubmitting(true);
+    try {
+      const newUnit = await deployFieldUnit({
+        name: unitName,
+        type: unitType,
+        location: unitLocation,
+        personnel: Number(personnelCount),
+        status: 'En Route',
+      });
+
+      setUnits((prev) => [...prev, newUnit]);
+      setActiveDeployed((prev) => prev + 1);
+      setShowDeployModal(false);
+      setUnitName('');
+    } catch (err) {
+      console.error('Failed to deploy field unit:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleToggleStatus = async (unit: Unit) => {
+    const nextStatus = unit.status === 'En Route' ? 'On Site' : unit.status === 'On Site' ? 'Available' : 'En Route';
+    try {
+      const updated = await updateFieldUnitStatus(unit.id, { status: nextStatus });
+      setUnits((prev) => prev.map((u) => (u.id === unit.id ? { ...u, ...updated } : u)));
+    } catch (err) {
+      console.error('Failed to update unit status:', err);
+    }
+  };
+
   return (
     <div className="p-4 md:p-6 lg:p-xl w-full min-h-full flex flex-col gap-6">
       {/* Header */}
@@ -58,7 +104,10 @@ export const RescueCoordination: React.FC = () => {
             Live overview of deployed units, active field incidents, and resource availability.
           </p>
         </div>
-        <button className="bg-primary-container text-on-primary font-label-md text-xs font-bold py-2.5 px-4 rounded-lg flex items-center gap-2 hover:bg-primary transition-colors shadow-xs cursor-pointer">
+        <button
+          onClick={() => setShowDeployModal(true)}
+          className="bg-primary-container text-on-primary font-label-md text-xs font-bold py-2.5 px-4 rounded-lg flex items-center gap-2 hover:bg-primary transition-colors shadow-xs cursor-pointer"
+        >
           <span className="material-symbols-outlined text-base">person_add</span>
           Deploy New Unit
         </button>
@@ -98,7 +147,9 @@ export const RescueCoordination: React.FC = () => {
                     </td>
                     <td className="p-3">
                       <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                        onClick={() => handleToggleStatus(unit)}
+                        title="Click to cycle status"
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold cursor-pointer hover:opacity-80 transition-opacity ${
                           unit.status === 'On Site'
                             ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
                             : unit.status === 'En Route'
@@ -111,8 +162,11 @@ export const RescueCoordination: React.FC = () => {
                       </span>
                     </td>
                     <td className="p-3 text-right">
-                      <button className="text-primary hover:underline font-bold text-xs">
-                        Dispatch
+                      <button
+                        onClick={() => handleToggleStatus(unit)}
+                        className="text-primary hover:underline font-bold text-xs cursor-pointer"
+                      >
+                        {unit.status === 'En Route' ? 'Arrive' : unit.status === 'On Site' ? 'Standby' : 'Dispatch'}
                       </button>
                     </td>
                   </tr>
@@ -253,6 +307,95 @@ export const RescueCoordination: React.FC = () => {
           </div>
         </section>
       </div>
+
+      {/* Deploy Field Unit Modal */}
+      {showDeployModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+          <div className="bg-surface border border-outline-variant rounded-2xl w-full max-w-md p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150 flex flex-col gap-4 text-xs">
+            <div className="flex justify-between items-center border-b border-outline-variant pb-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-xl">person_add</span>
+                <h3 className="font-headline-md text-base font-bold text-on-surface">Deploy New Field Response Squad</h3>
+              </div>
+              <button
+                onClick={() => setShowDeployModal(false)}
+                className="text-on-surface-variant hover:text-on-surface cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-lg">close</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleDeployUnit} className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="font-semibold text-on-surface">Squad / Unit Callout</label>
+                <input
+                  type="text"
+                  required
+                  value={unitName}
+                  onChange={(e) => setUnitName(e.target.value)}
+                  placeholder="e.g., NDRF Bravo Squad 2"
+                  className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-semibold text-on-surface">Unit Specialization</label>
+                <select
+                  value={unitType}
+                  onChange={(e) => setUnitType(e.target.value)}
+                  className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                >
+                  <option>Swiftwater Rescue Squad</option>
+                  <option>Zodiac Motorized Boat Unit</option>
+                  <option>Paramedic &amp; Trauma Mobile</option>
+                  <option>Air Reconnaissance &amp; Evac</option>
+                  <option>Amphibious Logistics Squad</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-on-surface">Deployment Sector</label>
+                  <input
+                    type="text"
+                    required
+                    value={unitLocation}
+                    onChange={(e) => setUnitLocation(e.target.value)}
+                    placeholder="e.g., Sector 12 North"
+                    className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="font-semibold text-on-surface">Personnel (Pax)</label>
+                  <input
+                    type="number"
+                    value={personnelCount}
+                    onChange={(e) => setPersonnelCount(Number(e.target.value))}
+                    className="bg-surface-container-lowest border border-outline-variant rounded-lg p-2 text-xs focus:border-primary outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 mt-3 pt-2 border-t border-outline-variant">
+                <button
+                  type="button"
+                  onClick={() => setShowDeployModal(false)}
+                  className="px-4 py-2 border border-outline-variant rounded-lg hover:bg-surface-container transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="bg-primary hover:bg-primary/90 text-on-primary font-bold px-4 py-2 rounded-lg transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  {submitting ? 'Deploying...' : 'Confirm & Deploy Unit'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

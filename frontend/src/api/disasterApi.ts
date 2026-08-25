@@ -344,6 +344,76 @@ export async function broadcastAlert(data: { title: string; severity: string; ar
   });
 }
 
+export async function createReliefCamp(data: {
+  name: string;
+  location: string;
+  capacity: number;
+  occupancy?: number;
+  foodDays?: string;
+  waterDays?: string;
+  medsStatus?: string;
+  personnel?: number;
+}) {
+  return await fetchApi<any>('/camps', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateReliefCamp(id: string, data: any) {
+  return await fetchApi<any>(`/camps/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deployFieldUnit(data: {
+  name: string;
+  type: string;
+  location: string;
+  personnel: number;
+  status?: string;
+  assignedIncidentId?: string;
+}) {
+  return await fetchApi<any>('/units', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateFieldUnitStatus(id: string, data: { status?: string; location?: string }) {
+  return await fetchApi<any>(`/units/${id}/status`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function createDroneMission(data: {
+  droneId: string;
+  targetArea: string;
+  altitudeM?: number;
+  speedKmh?: number;
+  flightMode?: string;
+}) {
+  return await fetchApi<any>('/missions', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function createIncident(data: {
+  sector: string;
+  type: string;
+  severity: string;
+  victims?: number;
+  status?: string;
+}) {
+  return await fetchApi<any>('/incidents', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
 // 13. Flood Progression Timeline
 export async function getFloodProgressionTimeline(): Promise<ProgressionStep[]> {
   try {
