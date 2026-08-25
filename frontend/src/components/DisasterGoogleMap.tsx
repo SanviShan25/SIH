@@ -46,6 +46,7 @@ export const DisasterGoogleMap: React.FC<DisasterGoogleMapProps> = ({
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const layersGroupRef = useRef<L.LayerGroup | null>(null);
   const droneMarkerRef = useRef<L.Marker | null>(null);
+  const searchMarkerRef = useRef<L.Marker | null>(null);
 
   const [activeTile, setActiveTile] = useState<'satellite' | 'dark' | 'osm'>('satellite');
   const [currentTelemetry, setCurrentTelemetry] = useState<any>({
@@ -335,6 +336,57 @@ export const DisasterGoogleMap: React.FC<DisasterGoogleMapProps> = ({
     socket.on('telemetry:update', handleTelemetry);
     return () => {
       socket.off('telemetry:update', handleTelemetry);
+    };
+  }, []);
+
+  // Listen for search navigation events (coordinates, landmarks, settlements)
+  useEffect(() => {
+    const handleFlyTo = (e: any) => {
+      if (!mapInstanceRef.current || !layersGroupRef.current) return;
+      const map = mapInstanceRef.current;
+      const group = layersGroupRef.current;
+      const { lat, lng, zoom = 16, label = 'Searched Location', category = 'Search Location' } = e.detail || {};
+
+      if (lat && lng) {
+        map.flyTo([lat, lng], zoom, { duration: 1.5 });
+
+        // Remove previous search pin if any
+        if (searchMarkerRef.current) {
+          group.removeLayer(searchMarkerRef.current);
+        }
+
+        const searchIcon = L.divIcon({
+          className: 'custom-search-pin',
+          html: `
+            <div style="display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -50%);">
+              <div style="background: #f59e0b; color: #000000; font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,0.6); border: 2px solid #ffffff; margin-bottom: 2px;">
+                📍 ${label}
+              </div>
+              <div style="width: 32px; height: 32px; border-radius: 50%; background: rgba(245, 158, 11, 0.35); border: 2.5px solid #f59e0b; display: flex; align-items: center; justify-content: center;">
+                <div style="width: 12px; height: 12px; border-radius: 50%; background: #f59e0b;"></div>
+              </div>
+            </div>
+          `,
+          iconSize: [140, 60],
+        });
+
+        const newMarker = L.marker([lat, lng], { icon: searchIcon }).bindPopup(`
+          <div style="font-family: sans-serif; font-size: 12px; color: #1e293b; min-width: 160px;">
+            <h4 style="margin: 0 0 4px; font-weight: bold; color: #d97706; font-size: 13px;">📍 ${label}</h4>
+            <p style="margin: 2px 0;"><strong>Category:</strong> ${category}</p>
+            <p style="margin: 2px 0; font-family: monospace; font-size: 11px;"><strong>Coordinates:</strong> ${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}</p>
+          </div>
+        `);
+
+        group.addLayer(newMarker);
+        searchMarkerRef.current = newMarker;
+        setTimeout(() => newMarker.openPopup(), 1200);
+      }
+    };
+
+    window.addEventListener('map:flyto', handleFlyTo);
+    return () => {
+      window.removeEventListener('map:flyto', handleFlyTo);
     };
   }, []);
 
