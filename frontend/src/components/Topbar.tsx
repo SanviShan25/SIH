@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 interface TopbarProps {
   onToggleMobile?: () => void;
@@ -51,9 +52,11 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleMobile }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const current = pageTitles[location.pathname] || { title: 'Flood Management', category: 'Authority' };
+  const { user, openAuthModal, logout } = useAuth();
 
   const [query, setQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [activeLocation, setActiveLocation] = useState('Sector 12');
   const [activeCoords, setActiveCoords] = useState('28.614, 77.209');
 
@@ -239,19 +242,82 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleMobile }) => {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full"></span>
         </Link>
 
-        {/* Profile Avatar */}
-        <div className="flex items-center gap-2 pl-2 border-l border-outline-variant">
-          <div className="w-8 h-8 rounded-full overflow-hidden border border-outline-variant bg-surface-container-high shrink-0">
-            <img
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhAqj2Ns6QjX39Zy4IzU4OPcLixqXsFox82fNB_7tapSHqdK8KECiHXlmRkaQob3jY0YxEO2n1mob0dedb2U6rewXQS86Caq_spSe1tItV7a1dvQNYWi3zQAcOMzSf6l6zuJmJGPHxrpItSNkgdBgmHFHhQCkRfiHVsXEgPQHF8z0a45Wi_blzNOC89dJ9mRmFPNc6d1WxvbC2wSSIBeXHlgixajywq2RZ9Rq5QfnbTn3sis0kahFZ"
-              alt="Authority Profile"
-              className="w-full h-full object-cover"
-            />
-          </div>
-          <div className="hidden xl:block text-left">
-            <div className="text-xs font-semibold text-on-surface leading-tight">Cmdr. S. Verma</div>
-            <div className="text-[10px] text-on-surface-variant leading-tight">NDRF Sector Ops</div>
-          </div>
+        {/* Profile / Auth Section */}
+        <div className="relative pl-2 border-l border-outline-variant">
+          <button
+            onClick={() => setShowProfileMenu((prev) => !prev)}
+            className="flex items-center gap-2 p-1 rounded-lg hover:bg-surface-container transition-colors cursor-pointer"
+          >
+            {user?.avatar ? (
+              <div className="w-8 h-8 rounded-full overflow-hidden border border-primary/40 bg-surface-container-high shrink-0 shadow-xs">
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            ) : (
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs shrink-0 shadow-xs border ${
+                user?.isGuest ? 'bg-amber-100 text-amber-900 border-amber-300' : 'bg-primary text-on-primary border-primary'
+              }`}>
+                {user?.isGuest ? (
+                  <span className="material-symbols-outlined text-base">person</span>
+                ) : (
+                  user?.name ? user.name.charAt(0).toUpperCase() : 'U'
+                )}
+              </div>
+            )}
+
+            <div className="hidden xl:block text-left">
+              <div className="text-xs font-semibold text-on-surface leading-tight truncate max-w-[130px]">
+                {user?.name || 'Guest Observer'}
+              </div>
+              <div className="text-[10px] text-on-surface-variant leading-tight flex items-center gap-1">
+                <span className={`w-1.5 h-1.5 rounded-full ${user?.isGuest ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                {user?.isGuest ? 'Guest Mode' : 'Commander'}
+              </div>
+            </div>
+            <span className="material-symbols-outlined text-on-surface-variant text-sm hidden xl:block">
+              expand_more
+            </span>
+          </button>
+
+          {/* Profile Dropdown Menu */}
+          {showProfileMenu && (
+            <div className="absolute top-full right-0 mt-2 bg-surface border border-outline-variant rounded-xl shadow-xl z-50 w-56 p-2 text-xs animate-in fade-in zoom-in-95 duration-100 flex flex-col gap-2">
+              <div className="p-2 border-b border-outline-variant bg-surface-container-low rounded-lg">
+                <div className="font-bold text-on-surface truncate">{user?.name}</div>
+                <div className="text-[10px] text-on-surface-variant truncate font-mono">{user?.email}</div>
+                <div className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-primary/10 text-primary text-[9px] font-bold">
+                  {user?.isGuest ? '👤 Observer Access' : '🛡️ Verified Commander'}
+                </div>
+              </div>
+
+              {user?.isGuest ? (
+                <button
+                  onClick={() => {
+                    setShowProfileMenu(false);
+                    openAuthModal();
+                  }}
+                  className="w-full bg-primary hover:bg-primary/90 text-on-primary font-bold py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-sm">login</span>
+                  Sign in with Google
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    logout();
+                    setShowProfileMenu(false);
+                  }}
+                  className="w-full bg-surface-container hover:bg-surface-container-high text-on-surface font-semibold py-2 px-3 rounded-lg flex items-center justify-center gap-2 transition-colors cursor-pointer border border-outline-variant"
+                >
+                  <span className="material-symbols-outlined text-sm text-error">logout</span>
+                  Switch to Guest Mode
+                </button>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </header>
