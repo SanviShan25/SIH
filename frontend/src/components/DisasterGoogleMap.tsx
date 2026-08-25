@@ -396,7 +396,7 @@ export const DisasterGoogleMap: React.FC<DisasterGoogleMapProps> = ({
       <div ref={mapContainerRef} className="w-full h-full min-h-[380px] z-0" />
 
       {/* Map Mode Switcher (Satellite / Tactical Dark / Street) */}
-      <div className="absolute top-3 right-3 z-[1000] flex bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-lg p-1 shadow-lg gap-1">
+      <div className="absolute top-3 right-3 z-20 flex bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-lg p-1 shadow-lg gap-1">
         <button
           onClick={() => setActiveTile('satellite')}
           className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
@@ -430,7 +430,7 @@ export const DisasterGoogleMap: React.FC<DisasterGoogleMapProps> = ({
       </div>
 
       {/* Interactive Legend / Live Telemetry HUD */}
-      <div className="absolute bottom-3 left-3 z-[1000] bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-lg p-2.5 shadow-lg text-xs font-mono flex items-center gap-3">
+      <div className="absolute bottom-3 left-3 z-20 bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-lg p-2.5 shadow-lg text-xs font-mono flex items-center gap-3">
         <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
         <div>
           <span className="font-bold text-white block">LIVE GIS MESH · SECTOR 12</span>

@@ -8,7 +8,7 @@ export const AuthModal: React.FC = () => {
   if (!isAuthModalOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-in fade-in duration-200">
       <div className="bg-surface border border-outline-variant rounded-2xl w-full max-w-md p-6 sm:p-8 shadow-2xl relative flex flex-col gap-6 text-on-surface">
         {/* Close Button */}
         <button
