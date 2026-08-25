@@ -39,15 +39,9 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleMobile }) => {
         </button>
 
         <div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider text-primary">
-              {current.category || 'Operations'}
-            </span>
-            <span className="hidden sm:inline-block text-outline-variant font-bold">/</span>
-            <h2 className="font-headline-md text-base md:text-lg font-bold text-on-surface truncate">
-              {current.title}
-            </h2>
-          </div>
+          <h2 className="font-headline-md text-base md:text-lg font-bold text-on-surface truncate">
+            {current.title}
+          </h2>
         </div>
       </div>
 
