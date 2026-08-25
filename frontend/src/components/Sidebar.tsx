@@ -9,6 +9,10 @@ interface SidebarProps {
 
 const navItems = [
   { name: 'Dashboard', path: '/dashboard', icon: 'dashboard' },
+  { name: 'Water Coverage', path: '/water-coverage', icon: 'water' },
+  { name: 'Affected Settlements', path: '/affected-settlements', icon: 'location_city' },
+  { name: 'Road Accessibility', path: '/road-accessibility', icon: 'alt_route' },
+  { name: 'Infrastructure Impact', path: '/infrastructure-impact', icon: 'domain' },
   { name: 'Flood Map', path: '/flood-map', icon: 'map' },
   { name: 'Drone Missions', path: '/drone-missions', icon: 'precision_manufacturing' },
   { name: 'Detection & Analysis', path: '/detection-analysis', icon: 'analytics' },

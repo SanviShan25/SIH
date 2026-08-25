@@ -12,6 +12,11 @@ import { FloodProgressionPrediction } from './pages/FloodProgressionPrediction';
 import { FloodReport } from './pages/FloodReport';
 import { IncidentRecords } from './pages/IncidentRecords';
 
+import { WaterCoverage } from './pages/WaterCoverage';
+import { AffectedSettlements } from './pages/AffectedSettlements';
+import { RoadAccessibility } from './pages/RoadAccessibility';
+import { InfrastructureImpact } from './pages/InfrastructureImpact';
+
 export const App: React.FC = () => {
   return (
     <Router>
@@ -19,6 +24,10 @@ export const App: React.FC = () => {
         <Route path="/" element={<Layout />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<OperationalDashboard />} />
+          <Route path="water-coverage" element={<WaterCoverage />} />
+          <Route path="affected-settlements" element={<AffectedSettlements />} />
+          <Route path="road-accessibility" element={<RoadAccessibility />} />
+          <Route path="infrastructure-impact" element={<InfrastructureImpact />} />
           <Route path="flood-map" element={<FloodMapIntelligence />} />
           <Route path="drone-missions" element={<DroneMissionControl />} />
           <Route path="detection-analysis" element={<DetectionAnalysisWorkspace />} />

@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Logo } from '../components/Logo';
 import { settlementsData, infrastructureData, roadAccessibilityData, waterSpreadData } from '../data/mockData';
 
@@ -10,7 +11,10 @@ export const OperationalDashboard: React.FC = () => {
         {/* Stats Row - 5 Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-gutter">
           {/* Stat Card 1: Water Coverage & Spread */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs">
+          <Link
+            to="/water-coverage"
+            className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs hover:border-primary transition-all cursor-pointer"
+          >
             <div className="flex justify-between items-center text-on-surface-variant">
               <span className="font-label-md text-label-md uppercase tracking-wider">Water Coverage</span>
               <span className="material-symbols-outlined text-primary-container" data-icon="water">water</span>
@@ -26,10 +30,13 @@ export const OperationalDashboard: React.FC = () => {
               <span>Spread: {waterSpreadData.trend} ({waterSpreadData.direction})</span>
             </div>
             <div className="absolute bottom-0 left-0 h-1 bg-primary-container w-[68%] transition-all"></div>
-          </div>
+          </Link>
 
           {/* Stat Card 2: Affected Settlements */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs">
+          <Link
+            to="/affected-settlements"
+            className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs hover:border-error transition-all cursor-pointer"
+          >
             <div className="flex justify-between items-center text-on-surface-variant">
               <span className="font-label-md text-label-md uppercase tracking-wider">Affected Settlements</span>
               <span className="material-symbols-outlined text-error" data-icon="location_city">location_city</span>
@@ -42,10 +49,13 @@ export const OperationalDashboard: React.FC = () => {
               Sector 12, Riverside +3
             </div>
             <div className="absolute bottom-0 left-0 h-1 bg-error w-full"></div>
-          </div>
+          </Link>
 
           {/* Stat Card 3: Road Accessibility */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs">
+          <Link
+            to="/road-accessibility"
+            className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs hover:border-[#f59e0b] transition-all cursor-pointer"
+          >
             <div className="flex justify-between items-center text-on-surface-variant">
               <span className="font-label-md text-label-md uppercase tracking-wider">Road Accessibility</span>
               <span className="material-symbols-outlined text-[#f59e0b]" data-icon="alt_route">alt_route</span>
@@ -58,10 +68,13 @@ export const OperationalDashboard: React.FC = () => {
               {roadAccessibilityData.openRoads} Open · {roadAccessibilityData.blockedRoads} Blocked · {roadAccessibilityData.submergedRoads} Submerged
             </div>
             <div className="absolute bottom-0 left-0 h-1 bg-[#f59e0b] w-[62%] opacity-80"></div>
-          </div>
+          </Link>
 
           {/* Stat Card 4: Infrastructure Impact */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs">
+          <Link
+            to="/infrastructure-impact"
+            className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs hover:border-primary transition-all cursor-pointer"
+          >
             <div className="flex justify-between items-center text-on-surface-variant">
               <span className="font-label-md text-label-md uppercase tracking-wider">Infra Impact</span>
               <span className="material-symbols-outlined text-primary-container" data-icon="domain">domain</span>
@@ -74,10 +87,13 @@ export const OperationalDashboard: React.FC = () => {
               1 Risk · 1 Flooded · 2 Accessible
             </div>
             <div className="absolute bottom-0 left-0 h-1 bg-primary-container w-full opacity-30"></div>
-          </div>
+          </Link>
 
           {/* Stat Card 5: Drones Available */}
-          <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs col-span-2 sm:col-span-1">
+          <Link
+            to="/drone-missions"
+            className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs col-span-2 sm:col-span-1 hover:border-[#10b981] transition-all cursor-pointer"
+          >
             <div className="flex justify-between items-center text-on-surface-variant">
               <span className="font-label-md text-label-md uppercase tracking-wider">Drones Available</span>
               <Logo className="w-8 h-7 text-[#10b981] shrink-0" />
@@ -90,7 +106,7 @@ export const OperationalDashboard: React.FC = () => {
               Drone-01 &amp; Drone-02
             </div>
             <div className="absolute bottom-0 left-0 h-1 bg-[#10b981] w-full opacity-50"></div>
-          </div>
+          </Link>
         </div>
 
         {/* Main Map Area */}

@@ -7,6 +7,10 @@ interface TopbarProps {
 
 const pageTitles: Record<string, { title: string; category?: string }> = {
   '/dashboard': { title: 'Operational Dashboard', category: 'HQ Command' },
+  '/water-coverage': { title: 'Water Coverage & Spread', category: 'Hydrology & Inundation' },
+  '/affected-settlements': { title: 'Affected Settlements', category: 'Civil Protection' },
+  '/road-accessibility': { title: 'Road Accessibility', category: 'Transport & Logistics' },
+  '/infrastructure-impact': { title: 'Infrastructure Impact', category: 'Critical Facilities' },
   '/flood-map': { title: 'Flood Map Intelligence', category: 'GIS & Satellite' },
   '/drone-missions': { title: 'Drone Mission Control', category: 'Autonomous Aerial Ops' },
   '/detection-analysis': { title: 'Detection & Analysis Workspace', category: 'Computer Vision AI' },
