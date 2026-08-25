@@ -54,6 +54,8 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleMobile }) => {
 
   const [query, setQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
+  const [activeLocation, setActiveLocation] = useState('Sector 12');
+  const [activeCoords, setActiveCoords] = useState('28.614, 77.209');
 
   // Match suggestions based on query
   const qLower = query.toLowerCase().trim();
@@ -67,6 +69,9 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleMobile }) => {
     : [];
 
   const handleSelectLocation = (loc: { lat: number; lng: number; name: string; category: string }) => {
+    setActiveLocation(loc.name);
+    setActiveCoords(`${loc.lat.toFixed(3)}, ${loc.lng.toFixed(3)}`);
+
     // If not on a page with map (dashboard or flood-map), navigate to dashboard
     if (location.pathname !== '/dashboard' && location.pathname !== '/flood-map') {
       navigate('/dashboard');
@@ -87,7 +92,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleMobile }) => {
       );
     }, 150);
 
-    setQuery(loc.name);
+    setQuery('');
     setShowDropdown(false);
   };
 
@@ -106,7 +111,7 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleMobile }) => {
         handleSelectLocation({
           lat,
           lng,
-          name: `GPS (${lat.toFixed(4)}, ${lng.toFixed(4)})`,
+          name: `GPS ${lat.toFixed(4)}, ${lng.toFixed(4)}`,
           category: 'Coordinate Target',
         });
         return;
@@ -117,12 +122,12 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleMobile }) => {
     if (suggestions.length > 0) {
       handleSelectLocation(suggestions[0]);
     } else {
-      // Default to Sector 12 if unknown string
+      // Custom named search
       handleSelectLocation({
         lat: 28.6139,
         lng: 77.2090,
         name: query.trim(),
-        category: 'Custom Search',
+        category: 'Searched Zone',
       });
     }
   };
@@ -215,12 +220,13 @@ export const Topbar: React.FC<TopbarProps> = ({ onToggleMobile }) => {
         )}
       </div>
 
-      {/* Right: Telemetry, Notification, Profile */}
+      {/* Right: Dynamic Location Badge, Notification, Profile */}
       <div className="flex items-center gap-2 md:gap-4">
-        <div className="hidden sm:flex items-center gap-2 bg-surface-container-low px-2.5 py-1 rounded-full border border-outline-variant text-xs">
-          <span className="font-semibold text-on-surface">Sector 12</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-outline-variant"></span>
-          <span className="text-on-surface-variant font-mono">DRONE-001 · 14:32</span>
+        <div className="hidden sm:flex items-center gap-2 bg-surface-container-low px-3 py-1 rounded-full border border-outline-variant text-xs shadow-xs transition-all">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span className="font-bold text-primary truncate max-w-[170px]">{activeLocation}</span>
+          <span className="w-1 h-1 rounded-full bg-outline-variant"></span>
+          <span className="text-on-surface-variant font-mono text-[11px]">{activeCoords}</span>
         </div>
 
         <Link
