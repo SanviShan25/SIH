@@ -15,7 +15,7 @@ const pageTitles: Record<string, { title: string; category?: string }> = {
   '/alerts': { title: 'Emergency Alert Management', category: 'Public Warning System' },
   '/incident-records': { title: 'Incident Records & Logs', category: 'Historical Archive' },
   '/flood-progression': { title: 'Flood Impact Analysis', category: 'Hydrological Modeling' },
-  '/flood-report': { title: 'Assessment Report Generator', category: 'Executive Summary' },
+  '/flood-report': { title: 'Assessment Report', category: 'Executive Summary' },
 };
 
 export const Topbar: React.FC<TopbarProps> = ({ onToggleMobile }) => {

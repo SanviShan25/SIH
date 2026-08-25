@@ -17,7 +17,7 @@ const navItems = [
   { name: 'Alerts', path: '/alerts', icon: 'notifications_active' },
   { name: 'Incident Records', path: '/incident-records', icon: 'description' },
   { name: 'Flood Impact Analysis', path: '/flood-progression', icon: 'qr_code_2' },
-  { name: 'Assessment Report Generator', path: '/flood-report', icon: 'summarize' },
+  { name: 'Assessment Report', path: '/flood-report', icon: 'summarize' },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) => {

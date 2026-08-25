@@ -10,7 +10,7 @@ export const FloodReport: React.FC = () => {
         <div className="bg-surface-container py-4 px-6 border-b border-outline-variant flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="font-headline-lg text-xl md:text-2xl font-bold text-on-surface">
-              ASSESSMENT REPORT GENERATOR - Sector 12
+              ASSESSMENT REPORT - Sector 12
             </h1>
             <p className="font-body-md text-xs md:text-sm text-on-surface-variant mt-1">
               Generated: 2023-10-27 14:45 UTC · Source: Aerial Drone Telemetry &amp; GIS Mesh
