@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { GOOGLE_MAPS_API_KEY } from '../api/config';
+import L from 'leaflet';
 import { getSocket } from '../api/socketClient';
 
 export interface MapLayerState {
@@ -18,323 +18,316 @@ interface DisasterGoogleMapProps {
   className?: string;
 }
 
-// Tactical Dark/Slate Map Style
-const disasterMapStyle = [
-  { elementType: 'geometry', stylers: [{ color: '#1d2c4d' }] },
-  { elementType: 'labels.text.fill', stylers: [{ color: '#8ec3b9' }] },
-  { elementType: 'labels.text.stroke', stylers: [{ color: '#1a3646' }] },
-  { featureType: 'administrative.country', elementType: 'geometry.stroke', stylers: [{ color: '#4b6878' }] },
-  { featureType: 'administrative.land_parcel', elementType: 'labels.text.fill', stylers: [{ color: '#64779e' }] },
-  { featureType: 'administrative.province', elementType: 'geometry.stroke', stylers: [{ color: '#4b6878' }] },
-  { featureType: 'landscape.man_made', elementType: 'geometry.stroke', stylers: [{ color: '#334e68' }] },
-  { featureType: 'landscape.natural', elementType: 'geometry', stylers: [{ color: '#021019' }] },
-  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#283d6a' }] },
-  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#6f9ba5' }] },
-  { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#304a7d' }] },
-  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#98a5be' }] },
-  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#2c6693' }] },
-  { featureType: 'road.highway', elementType: 'geometry.stroke', stylers: [{ color: '#25577e' }] },
-  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0e1626' }] },
-  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#4e6d97' }] },
-];
+// Map Tile Providers
+const TILE_LAYERS = {
+  satellite: {
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: 'Esri, Maxar, Earthstar Geographics',
+    maxZoom: 19,
+  },
+  dark: {
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://carto.com/">CARTO</a>',
+    maxZoom: 19,
+  },
+  osm: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; OpenStreetMap contributors',
+    maxZoom: 19,
+  },
+};
 
 export const DisasterGoogleMap: React.FC<DisasterGoogleMapProps> = ({
   layers,
-  className = 'w-full h-full min-h-[500px]',
+  className = 'w-full h-full min-h-[400px]',
 }) => {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapError, setMapError] = useState(false);
-  const [mapType, setMapType] = useState<'roadmap' | 'satellite' | 'hybrid'>('hybrid');
-  const googleMapInstance = useRef<any>(null);
-  const markersRef = useRef<any[]>([]);
-  const polygonsRef = useRef<any[]>([]);
-  const polylinesRef = useRef<any[]>([]);
-  const droneMarkerRef = useRef<any>(null);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const layersGroupRef = useRef<L.LayerGroup | null>(null);
+  const droneMarkerRef = useRef<L.Marker | null>(null);
 
-  // Default coordinate center (Sector 12 / Yamuna River Basin area)
-  const defaultCenter = { lat: 28.6139, lng: 77.2090 };
+  const [activeTile, setActiveTile] = useState<'satellite' | 'dark' | 'osm'>('satellite');
+  const [currentTelemetry, setCurrentTelemetry] = useState<any>({
+    lat: 28.6139,
+    lng: 77.2090,
+    altitude: 120,
+    speed: 45,
+    battery: 84,
+  });
+
+  // Default coordinate center (Sector 12 Riverbank Basin)
+  const defaultCenter: [number, number] = [28.6139, 77.2090];
 
   useEffect(() => {
-    // Check if Google Maps script is already loaded
-    if ((window as any).google && (window as any).google.maps) {
-      initMap();
-      return;
-    }
+    if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    const existingScript = document.getElementById('google-maps-script');
-    if (!existingScript) {
-      const script = document.createElement('script');
-      script.id = 'google-maps-script';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=geometry,places`;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        initMap();
-      };
-      script.onerror = () => {
-        console.warn('Google Maps JS SDK failed to load. Using tactical GIS fallback canvas.');
-        setMapError(true);
-      };
-      document.head.appendChild(script);
-    } else {
-      existingScript.addEventListener('load', () => initMap());
-    }
+    // Initialize Leaflet Map
+    const map = L.map(mapContainerRef.current, {
+      center: defaultCenter,
+      zoom: 14,
+      zoomControl: false,
+      attributionControl: false,
+    });
 
-    function initMap() {
-      if (!mapRef.current || !(window as any).google) return;
-      try {
-        const google = (window as any).google;
-        const map = new google.maps.Map(mapRef.current, {
-          center: defaultCenter,
-          zoom: 14,
-          mapTypeId: mapType,
-          styles: mapType === 'roadmap' ? disasterMapStyle : undefined,
-          disableDefaultUI: false,
-          zoomControl: true,
-          mapTypeControl: false,
-          streetViewControl: false,
-          fullscreenControl: true,
-        });
+    // Add Zoom Control at bottom right
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-        googleMapInstance.current = map;
-        setMapLoaded(true);
-      } catch (err) {
-        console.error('Error initializing Google Map:', err);
-        setMapError(true);
-      }
-    }
+    // Add Initial Tile Layer
+    const tileConfig = TILE_LAYERS[activeTile];
+    const tile = L.tileLayer(tileConfig.url, {
+      maxZoom: tileConfig.maxZoom,
+      attribution: tileConfig.attribution,
+    }).addTo(map);
+
+    tileLayerRef.current = tile;
+
+    // Initialize Layer Group for dynamic features
+    const layerGroup = L.layerGroup().addTo(map);
+    layersGroupRef.current = layerGroup;
+    mapInstanceRef.current = map;
+
+    // Ensure map tiles resize correctly after mounting
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
   }, []);
 
-  // Update map type
+  // Update Tile Layer when user toggles Satellite / Dark / Street
   useEffect(() => {
-    if (googleMapInstance.current) {
-      googleMapInstance.current.setMapTypeId(mapType);
-      if (mapType === 'roadmap') {
-        googleMapInstance.current.setOptions({ styles: disasterMapStyle });
-      } else {
-        googleMapInstance.current.setOptions({ styles: null });
-      }
+    if (!mapInstanceRef.current) return;
+    const map = mapInstanceRef.current;
+
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
     }
-  }, [mapType]);
 
-  // Update Layers & Markers on the Map
+    const tileConfig = TILE_LAYERS[activeTile];
+    const newTile = L.tileLayer(tileConfig.url, {
+      maxZoom: tileConfig.maxZoom,
+      attribution: tileConfig.attribution,
+    }).addTo(map);
+
+    tileLayerRef.current = newTile;
+  }, [activeTile]);
+
+  // Update Dynamic Layers, Polygons, and Markers
   useEffect(() => {
-    if (!mapLoaded || !googleMapInstance.current || !(window as any).google) return;
-    const google = (window as any).google;
-    const map = googleMapInstance.current;
+    if (!mapInstanceRef.current || !layersGroupRef.current) return;
+    const group = layersGroupRef.current;
+    group.clearLayers();
 
-    // Clear previous elements
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
-    polygonsRef.current.forEach((p) => p.setMap(null));
-    polygonsRef.current = [];
-    polylinesRef.current.forEach((l) => l.setMap(null));
-    polylinesRef.current = [];
-
-    const infoWindow = new google.maps.InfoWindow();
-
-    // 1. Water Levels / Flood Inundation Polygons
+    // 1. Flood Inundation Polygons (Water Levels)
     if (layers.waterLevels) {
-      const floodZoneCoords1 = [
-        { lat: 28.6180, lng: 77.2030 },
-        { lat: 28.6220, lng: 77.2100 },
-        { lat: 28.6190, lng: 77.2180 },
-        { lat: 28.6120, lng: 77.2140 },
-        { lat: 28.6110, lng: 77.2050 },
+      const floodZone1Coords: [number, number][] = [
+        [28.6190, 77.2020],
+        [28.6230, 77.2100],
+        [28.6200, 77.2190],
+        [28.6120, 77.2150],
+        [28.6100, 77.2040],
       ];
 
-      const floodPolygon1 = new google.maps.Polygon({
-        paths: floodZoneCoords1,
-        strokeColor: '#dc2626',
-        strokeOpacity: 0.8,
-        strokeWeight: 2,
+      const floodPoly1 = L.polygon(floodZone1Coords, {
+        color: '#dc2626',
+        weight: 2,
         fillColor: '#ef4444',
-        fillOpacity: 0.35,
-      });
-      floodPolygon1.setMap(map);
-      polygonsRef.current.push(floodPolygon1);
+        fillOpacity: 0.38,
+      }).bindPopup(`
+        <div style="font-family: sans-serif; font-size: 12px; color: #1e293b;">
+          <h4 style="margin: 0 0 4px; font-weight: bold; color: #dc2626; font-size: 13px;">🌊 Sector 12 High Inundation Zone</h4>
+          <p style="margin: 2px 0;"><strong>Peak Depth:</strong> 3.2m (Surging)</p>
+          <p style="margin: 2px 0;"><strong>Risk Level:</strong> Critical Rise</p>
+          <p style="margin: 2px 0;"><strong>Spread Velocity:</strong> 1.8 m/s South-East</p>
+        </div>
+      `);
+      group.addLayer(floodPoly1);
 
-      const floodZoneCoords2 = [
-        { lat: 28.6120, lng: 77.2080 },
-        { lat: 28.6080, lng: 77.2150 },
-        { lat: 28.6050, lng: 77.2200 },
-        { lat: 28.6010, lng: 77.2120 },
+      const floodZone2Coords: [number, number][] = [
+        [28.6120, 77.2080],
+        [28.6070, 77.2160],
+        [28.6040, 77.2210],
+        [28.6000, 77.2110],
       ];
 
-      const floodPolygon2 = new google.maps.Polygon({
-        paths: floodZoneCoords2,
-        strokeColor: '#f59e0b',
-        strokeOpacity: 0.7,
-        strokeWeight: 2,
+      const floodPoly2 = L.polygon(floodZone2Coords, {
+        color: '#f59e0b',
+        weight: 2,
         fillColor: '#3b82f6',
-        fillOpacity: 0.3,
-      });
-      floodPolygon2.setMap(map);
-      polygonsRef.current.push(floodPolygon2);
+        fillOpacity: 0.32,
+      }).bindPopup(`
+        <div style="font-family: sans-serif; font-size: 12px; color: #1e293b;">
+          <h4 style="margin: 0 0 4px; font-weight: bold; color: #0284c7; font-size: 13px;">💧 Lowland Catchment Basin</h4>
+          <p style="margin: 2px 0;"><strong>Depth:</strong> 1.4m</p>
+          <p style="margin: 2px 0;"><strong>Status:</strong> Elevated</p>
+        </div>
+      `);
+      group.addLayer(floodPoly2);
     }
 
     // 2. Affected Settlements Markers
     if (layers.settlements) {
       const settlements = [
-        { id: 'SET-01', name: 'Sector 12 Village', lat: 28.6160, lng: 77.2090, status: 'Flood Affected (1.4m Depth)', pop: 620, color: '#dc2626' },
-        { id: 'SET-02', name: 'Riverside Colony', lat: 28.6110, lng: 77.2120, status: 'Partially Submerged (1.8m Depth)', pop: 450, color: '#b91c1c' },
-        { id: 'SET-03', name: 'East Hamlet', lat: 28.6080, lng: 77.2180, status: 'Flood Affected (0.9m Depth)', pop: 280, color: '#dc2626' },
+        { id: 'SET-01', name: 'Sector 12 Village', lat: 28.6165, lng: 77.2090, status: 'Flood Affected (1.4m Depth)', pop: 620, color: '#dc2626' },
+        { id: 'SET-02', name: 'Riverside Colony', lat: 28.6110, lng: 77.2135, status: 'Partially Submerged (1.8m Depth)', pop: 450, color: '#b91c1c' },
+        { id: 'SET-03', name: 'East Hamlet', lat: 28.6075, lng: 77.2185, status: 'Flood Affected (0.9m Depth)', pop: 280, color: '#dc2626' },
       ];
 
       settlements.forEach((s) => {
-        const marker = new google.maps.Marker({
-          position: { lat: s.lat, lng: s.lng },
-          map,
-          title: s.name,
-          icon: {
-            path: google.maps.SymbolPath.CIRCLE,
-            scale: 9,
-            fillColor: s.color,
-            fillOpacity: 0.9,
-            strokeWeight: 2,
-            strokeColor: '#ffffff',
-          },
-        });
-
-        marker.addListener('click', () => {
-          infoWindow.setContent(`
-            <div style="padding: 8px; color: #1e293b; font-family: sans-serif; font-size: 12px; line-height: 1.4;">
-              <h4 style="margin: 0 0 4px; font-weight: bold; font-size: 14px; color: #dc2626;">🚩 ${s.name}</h4>
-              <p style="margin: 2px 0;"><strong>Status:</strong> ${s.status}</p>
-              <p style="margin: 2px 0;"><strong>Population:</strong> ${s.pop} residents</p>
-              <p style="margin: 2px 0; color: #0284c7;"><strong>Evacuation Priority:</strong> Immediate</p>
+        const customIcon = L.divIcon({
+          className: 'custom-settlement-icon',
+          html: `
+            <div style="display: flex; flex-direction: column; align-items: center; cursor: pointer; transform: translate(-50%, -50%);">
+              <div style="width: 14px; height: 14px; border-radius: 50%; background: ${s.color}; border: 2.5px solid #ffffff; box-shadow: 0 2px 6px rgba(0,0,0,0.5);"></div>
+              <div style="background: #1e293b; color: #ffffff; font-size: 10px; font-weight: bold; padding: 2px 6px; border-radius: 4px; white-space: nowrap; margin-top: 3px; box-shadow: 0 2px 4px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.3);">
+                ${s.name}
+              </div>
             </div>
-          `);
-          infoWindow.open(map, marker);
+          `,
+          iconSize: [100, 30],
         });
 
-        markersRef.current.push(marker);
+        const marker = L.marker([s.lat, s.lng], { icon: customIcon }).bindPopup(`
+          <div style="font-family: sans-serif; font-size: 12px; color: #0f172a; line-height: 1.4;">
+            <h4 style="margin: 0 0 4px; font-weight: bold; color: #dc2626; font-size: 13px;">🚩 ${s.name}</h4>
+            <p style="margin: 2px 0;"><strong>Status:</strong> ${s.status}</p>
+            <p style="margin: 2px 0;"><strong>Population:</strong> ${s.pop} residents</p>
+            <p style="margin: 2px 0; color: #0284c7; font-weight: bold;">Priority: Immediate Evacuation</p>
+          </div>
+        `);
+        group.addLayer(marker);
       });
     }
 
     // 3. Infrastructure Assets
     if (layers.infrastructure) {
       const facilities = [
-        { id: 'B-02', name: 'Bridge B-02', lat: 28.6145, lng: 77.2060, type: 'Bridge', status: 'Risk Detected (Flow shear 12k m³/s)', color: '#d97706' },
-        { id: 'H-01', name: 'Hospital H-01 Regional', lat: 28.6210, lng: 77.2200, type: 'Hospital', status: 'Accessible / Fully Operational', color: '#15803d' },
-        { id: 'PS-01', name: 'Substation Sub-04 Grid', lat: 28.6070, lng: 77.2020, type: 'Power Station', status: 'Risk (0.5m Perimeter Water)', color: '#d97706' },
+        { id: 'B-02', name: 'Bridge B-02', lat: 28.6145, lng: 77.2050, type: 'Bridge', status: 'Risk (Flow shear 12k m³/s)', bg: '#f59e0b', text: '#ffffff' },
+        { id: 'H-01', name: 'Hospital H-01', lat: 28.6215, lng: 77.2210, type: 'Hospital', status: 'Fully Accessible / 120 Beds', bg: '#15803d', text: '#ffffff' },
+        { id: 'PS-01', name: 'Substation Sub-04', lat: 28.6070, lng: 77.2015, type: 'Power Station', status: 'Risk (Sandbag cordon active)', bg: '#d97706', text: '#ffffff' },
       ];
 
       facilities.forEach((f) => {
-        const marker = new google.maps.Marker({
-          position: { lat: f.lat, lng: f.lng },
-          map,
-          title: f.name,
-          icon: {
-            path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
-            scale: 6,
-            fillColor: f.color,
-            fillOpacity: 1,
-            strokeWeight: 2,
-            strokeColor: '#ffffff',
-          },
-        });
-
-        marker.addListener('click', () => {
-          infoWindow.setContent(`
-            <div style="padding: 8px; color: #1e293b; font-family: sans-serif; font-size: 12px; line-height: 1.4;">
-              <h4 style="margin: 0 0 4px; font-weight: bold; font-size: 13px; color: #0f172a;">🏢 ${f.name}</h4>
-              <p style="margin: 2px 0;"><strong>Type:</strong> ${f.type}</p>
-              <p style="margin: 2px 0;"><strong>Condition:</strong> ${f.status}</p>
+        const customIcon = L.divIcon({
+          className: 'custom-infra-icon',
+          html: `
+            <div style="background: ${f.bg}; color: ${f.text}; font-size: 10px; font-weight: bold; padding: 3px 7px; border-radius: 6px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.4); border: 1.5px solid #ffffff; display: flex; align-items: center; gap: 3px; transform: translate(-50%, -50%);">
+              <span>🏢</span> ${f.name}
             </div>
-          `);
-          infoWindow.open(map, marker);
+          `,
+          iconSize: [110, 26],
         });
 
-        markersRef.current.push(marker);
-      });
-    }
-
-    // 4. Roads Status (Polylines)
-    if (layers.roadStatus) {
-      // Blocked Highway 4 (Red)
-      const highway4Coords = [
-        { lat: 28.6230, lng: 77.2010 },
-        { lat: 28.6180, lng: 77.2060 },
-        { lat: 28.6140, lng: 77.2090 },
-      ];
-      const blockedRoad = new google.maps.Polyline({
-        path: highway4Coords,
-        geodesic: true,
-        strokeColor: '#ef4444',
-        strokeOpacity: 0.9,
-        strokeWeight: 5,
-      });
-      blockedRoad.setMap(map);
-      polylinesRef.current.push(blockedRoad);
-    }
-
-    // 5. Safe Evacuation Routes (Green Polyline)
-    if (layers.safeRoutes) {
-      const safeRouteCoords = [
-        { lat: 28.6150, lng: 77.2150 },
-        { lat: 28.6200, lng: 77.2180 },
-        { lat: 28.6250, lng: 77.2250 },
-      ];
-      const safeLine = new google.maps.Polyline({
-        path: safeRouteCoords,
-        geodesic: true,
-        strokeColor: '#10b981',
-        strokeOpacity: 0.95,
-        strokeWeight: 5,
-      });
-      safeLine.setMap(map);
-      polylinesRef.current.push(safeLine);
-    }
-
-    // 6. Active Drone Telemetry Pin
-    if (layers.activeAssets) {
-      const dronePos = { lat: 28.6139, lng: 77.2090 };
-      const droneMarker = new google.maps.Marker({
-        position: dronePos,
-        map,
-        title: 'DRONE-001 (Active Reconnaissance)',
-        icon: {
-          path: google.maps.SymbolPath.FORWARD_CLOSED_ARROW,
-          scale: 7,
-          fillColor: '#0284c7',
-          fillOpacity: 1,
-          strokeWeight: 2,
-          strokeColor: '#ffffff',
-          rotation: 45,
-        },
-      });
-
-      droneMarker.addListener('click', () => {
-        infoWindow.setContent(`
-          <div style="padding: 8px; color: #0369a1; font-family: sans-serif; font-size: 12px;">
-            <h4 style="margin: 0 0 4px; font-weight: bold; font-size: 14px;">🛸 DRONE-001</h4>
-            <p style="margin: 2px 0;"><strong>Altitude:</strong> 120m AGL</p>
-            <p style="margin: 2px 0;"><strong>Speed:</strong> 45 km/h</p>
-            <p style="margin: 2px 0;"><strong>Flight Mode:</strong> Autonomous Reconnaissance</p>
+        const marker = L.marker([f.lat, f.lng], { icon: customIcon }).bindPopup(`
+          <div style="font-family: sans-serif; font-size: 12px; color: #0f172a; line-height: 1.4;">
+            <h4 style="margin: 0 0 4px; font-weight: bold; font-size: 13px;">🏢 ${f.name}</h4>
+            <p style="margin: 2px 0;"><strong>Type:</strong> ${f.type}</p>
+            <p style="margin: 2px 0;"><strong>Condition:</strong> ${f.status}</p>
           </div>
         `);
-        infoWindow.open(map, droneMarker);
+        group.addLayer(marker);
+      });
+    }
+
+    // 4. Roads Status (Blocked vs Open)
+    if (layers.roadStatus) {
+      // Highway 4 Overpass (Blocked - Red)
+      const highway4Coords: [number, number][] = [
+        [28.6240, 77.2005],
+        [28.6180, 77.2060],
+        [28.6140, 77.2090],
+      ];
+      const blockedRoad = L.polyline(highway4Coords, {
+        color: '#ef4444',
+        weight: 5,
+        opacity: 0.9,
+        dashArray: '8, 8',
+      }).bindPopup('<b>Highway 4 Overpass</b><br/><span style="color:#ef4444;font-weight:bold;">BLOCKED (1.2m Water Surge)</span>');
+      group.addLayer(blockedRoad);
+
+      // Main Street Crossing (Submerged - Orange)
+      const mainStCoords: [number, number][] = [
+        [28.6150, 77.2090],
+        [28.6110, 77.2105],
+        [28.6080, 77.2130],
+      ];
+      const submergedRoad = L.polyline(mainStCoords, {
+        color: '#f59e0b',
+        weight: 4,
+        opacity: 0.9,
+      }).bindPopup('<b>Main Street & Sector 12 Junction</b><br/><span style="color:#d97706;font-weight:bold;">SUBMERGED (0.85m Depth)</span>');
+      group.addLayer(submergedRoad);
+    }
+
+    // 5. Safe Evacuation Routes (Green)
+    if (layers.safeRoutes) {
+      const safeRouteCoords: [number, number][] = [
+        [28.6155, 77.2150],
+        [28.6205, 77.2185],
+        [28.6260, 77.2260],
+      ];
+      const safeLine = L.polyline(safeRouteCoords, {
+        color: '#10b981',
+        weight: 5,
+        opacity: 0.95,
+      }).bindPopup('<b>North Ring Corridor</b><br/><span style="color:#059669;font-weight:bold;">OPEN PRIMARY SAFE EVACUATION ROUTE</span>');
+      group.addLayer(safeLine);
+    }
+
+    // 6. Active Drone Telemetry Live Marker
+    if (layers.activeAssets) {
+      const droneIcon = L.divIcon({
+        className: 'custom-drone-icon',
+        html: `
+          <div style="display: flex; flex-direction: column; align-items: center; transform: translate(-50%, -50%);">
+            <div style="background: #0284c7; color: #ffffff; font-size: 10px; font-weight: bold; padding: 2px 7px; border-radius: 999px; white-space: nowrap; box-shadow: 0 2px 6px rgba(0,0,0,0.5); border: 1.5px solid #ffffff; margin-bottom: 3px;">
+              🛸 DRONE-001 (${currentTelemetry.battery}%)
+            </div>
+            <div style="width: 28px; height: 28px; border-radius: 50%; background: rgba(2,132,199,0.25); border: 2px solid #0284c7; display: flex; align-items: center; justify-content: center; animation: pulse 2s infinite;">
+              <div style="width: 10px; height: 10px; border-radius: 50%; background: #0284c7;"></div>
+            </div>
+          </div>
+        `,
+        iconSize: [120, 50],
       });
 
-      droneMarkerRef.current = droneMarker;
-      markersRef.current.push(droneMarker);
-    }
-  }, [mapLoaded, layers]);
+      const droneMarker = L.marker([currentTelemetry.lat, currentTelemetry.lng], { icon: droneIcon }).bindPopup(`
+        <div style="font-family: sans-serif; font-size: 12px; color: #0369a1; line-height: 1.4;">
+          <h4 style="margin: 0 0 4px; font-weight: bold; font-size: 14px;">🛸 DRONE-001 (Live Flight Patrol)</h4>
+          <p style="margin: 2px 0;"><strong>Altitude:</strong> ${currentTelemetry.altitude}m AGL</p>
+          <p style="margin: 2px 0;"><strong>Ground Speed:</strong> ${currentTelemetry.speed} km/h</p>
+          <p style="margin: 2px 0;"><strong>Battery:</strong> ${currentTelemetry.battery}%</p>
+          <p style="margin: 2px 0;"><strong>Flight Mode:</strong> Autonomous Disaster Reconnaissance</p>
+        </div>
+      `);
 
-  // Live WebSocket updates for Drone Marker position
+      group.addLayer(droneMarker);
+      droneMarkerRef.current = droneMarker;
+    }
+  }, [layers, activeTile, currentTelemetry]);
+
+  // Live WebSocket updates for Drone Telemetry
   useEffect(() => {
     const socket = getSocket();
     const handleTelemetry = (telemetry: any) => {
-      if (droneMarkerRef.current && telemetry.coordinates) {
-        const google = (window as any).google;
-        if (google && google.maps) {
-          const newPos = new google.maps.LatLng(
-            telemetry.coordinates.lat || 28.6139,
-            telemetry.coordinates.lng || 77.2090
-          );
-          droneMarkerRef.current.setPosition(newPos);
+      if (telemetry.coordinates) {
+        const lat = telemetry.coordinates.lat || 28.6139;
+        const lng = telemetry.coordinates.lng || 77.2090;
+
+        setCurrentTelemetry({
+          lat,
+          lng,
+          altitude: telemetry.altitude || 120,
+          speed: telemetry.speed || 45,
+          battery: telemetry.battery || 84,
+        });
+
+        if (droneMarkerRef.current) {
+          droneMarkerRef.current.setLatLng([lat, lng]);
         }
       }
     };
@@ -346,58 +339,52 @@ export const DisasterGoogleMap: React.FC<DisasterGoogleMapProps> = ({
   }, []);
 
   return (
-    <div className={`relative ${className}`}>
-      {/* Google Maps Container */}
-      <div ref={mapRef} className="w-full h-full rounded-xl overflow-hidden shadow-sm" />
+    <div className={`relative ${className} bg-[#0b1329] overflow-hidden`}>
+      {/* Map Container */}
+      <div ref={mapContainerRef} className="w-full h-full min-h-[380px] z-0" />
 
-      {/* Fallback Tactical Canvas if offline or without internet */}
-      {mapError && (
-        <div
-          className="w-full h-full bg-cover bg-center absolute inset-0 rounded-xl overflow-hidden"
-          style={{
-            backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDHUHvTauXo11PCYMgAxhVjsv8KX3CJ5ULE8I21bP8zvnBzbg2VoCYmtdcYFE13HdSBZGFpZZcmSkh2-QELLretfBtt5chwktUPXkd7m3YGYCGiqSEj3R6MiDMy6b77vqI0pFPUKnL9C4GsS5GetoLqAQPB_mAzXLo-Y4I-V0_xZ451Ezr7NVUW156dSFl9qtCcppZLZTGudciGkmg_i1yDEu5-RBdsmQlwTX1ZgCHBXtiAzIHAaR2j')`,
-          }}
-        >
-          <div className="absolute top-4 left-4 bg-surface/90 backdrop-blur-xs border border-outline-variant p-2 rounded-lg text-xs font-mono text-on-surface">
-            Tactical GIS Satellite Mesh Mode
-          </div>
-        </div>
-      )}
-
-      {/* Map Style Switcher (Roadmap / Satellite / Hybrid) */}
-      <div className="absolute top-4 right-4 z-10 flex bg-surface-container-lowest/90 backdrop-blur-xs border border-outline-variant rounded-lg p-1 shadow-sm gap-1">
+      {/* Map Mode Switcher (Satellite / Tactical Dark / Street) */}
+      <div className="absolute top-3 right-3 z-[1000] flex bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-lg p-1 shadow-lg gap-1">
         <button
-          onClick={() => setMapType('hybrid')}
-          className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors ${
-            mapType === 'hybrid' ? 'bg-primary text-white' : 'text-on-surface hover:bg-surface-container'
+          onClick={() => setActiveTile('satellite')}
+          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+            activeTile === 'satellite'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-slate-300 hover:bg-slate-800'
           }`}
         >
-          Hybrid
+          🛰️ Satellite HD
         </button>
         <button
-          onClick={() => setMapType('satellite')}
-          className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors ${
-            mapType === 'satellite' ? 'bg-primary text-white' : 'text-on-surface hover:bg-surface-container'
+          onClick={() => setActiveTile('dark')}
+          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+            activeTile === 'dark'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-slate-300 hover:bg-slate-800'
           }`}
         >
-          Satellite
+          🌌 Tactical Dark
         </button>
         <button
-          onClick={() => setMapType('roadmap')}
-          className={`px-2.5 py-1 rounded text-xs font-semibold transition-colors ${
-            mapType === 'roadmap' ? 'bg-primary text-white' : 'text-on-surface hover:bg-surface-container'
+          onClick={() => setActiveTile('osm')}
+          className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+            activeTile === 'osm'
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'text-slate-300 hover:bg-slate-800'
           }`}
         >
-          Tactical
+          🗺️ Street Map
         </button>
       </div>
 
-      {/* Live Drone HUD Overlay */}
-      <div className="absolute bottom-4 left-4 z-10 bg-surface-container-lowest/90 backdrop-blur-xs border border-outline-variant rounded-lg p-3 shadow-md text-xs font-mono flex items-center gap-3">
-        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+      {/* Interactive Legend / Live Telemetry HUD */}
+      <div className="absolute bottom-3 left-3 z-[1000] bg-slate-900/90 backdrop-blur-md border border-slate-700/80 rounded-lg p-2.5 shadow-lg text-xs font-mono flex items-center gap-3">
+        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
         <div>
-          <span className="font-bold text-on-surface block">LIVE GIS MESH · SECTOR 12</span>
-          <span className="text-on-surface-variant text-[11px]">Yamuna Basin Drainage Vector</span>
+          <span className="font-bold text-white block">LIVE GIS MESH · SECTOR 12</span>
+          <span className="text-slate-400 text-[11px]">
+            Drone: {currentTelemetry.lat.toFixed(4)}, {currentTelemetry.lng.toFixed(4)} · Alt: {currentTelemetry.altitude}m
+          </span>
         </div>
       </div>
     </div>
