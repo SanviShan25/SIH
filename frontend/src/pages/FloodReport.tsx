@@ -58,7 +58,13 @@ export const FloodReport: React.FC = () => {
               <span className="material-symbols-outlined text-base">print</span>
               Print
             </button>
-            <button className="font-label-md text-xs font-semibold bg-primary text-on-primary hover:bg-primary/90 px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer">
+            <button
+              onClick={() => {
+                const apiBase = import.meta.env.VITE_API_BASE_URL || 'https://drone-flood-backend.onrender.com/api/v1';
+                window.open(`${apiBase}/report/current/pdf?print=true`, '_blank');
+              }}
+              className="font-label-md text-xs font-semibold bg-primary text-on-primary hover:bg-primary/90 px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+            >
               <span className="material-symbols-outlined text-base">download</span>
               Export PDF
             </button>
