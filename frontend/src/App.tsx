@@ -21,10 +21,10 @@ import { AffectedSettlements } from './pages/AffectedSettlements';
 import { RoadAccessibility } from './pages/RoadAccessibility';
 import { InfrastructureImpact } from './pages/InfrastructureImpact';
 
-// Fallback or Environment Google OAuth Client ID
+// Google OAuth Client ID
 const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-  '1083981881472-mockclientidfordronedisaster.apps.googleusercontent.com';
+  '999459573398-1o578t19cv5vq9unfv15pr3f9vgpn4i4.apps.googleusercontent.com';
 
 export const App: React.FC = () => {
   return (
