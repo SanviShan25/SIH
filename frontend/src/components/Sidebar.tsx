@@ -12,12 +12,12 @@ const navItems = [
   { name: 'Flood Map', path: '/flood-map', icon: 'map' },
   { name: 'Drone Missions', path: '/drone-missions', icon: 'precision_manufacturing' },
   { name: 'Detection & Analysis', path: '/detection-analysis', icon: 'analytics' },
-  { name: 'Rescue Coordination', path: '/rescue-coordination', icon: 'emergency_share' },
+  { name: 'Response Planning', path: '/rescue-coordination', icon: 'emergency_share' },
   { name: 'Relief Camps', path: '/relief-camps', icon: 'location_away' },
   { name: 'Alerts', path: '/alerts', icon: 'notifications_active' },
   { name: 'Incident Records', path: '/incident-records', icon: 'description' },
-  { name: 'Flood Progression', path: '/flood-progression', icon: 'qr_code_2' },
-  { name: 'Flood Report', path: '/flood-report', icon: 'summarize' },
+  { name: 'Flood Impact Analysis', path: '/flood-progression', icon: 'qr_code_2' },
+  { name: 'Assessment Report Generator', path: '/flood-report', icon: 'summarize' },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) => {
@@ -89,17 +89,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onCloseMobile }) =
             </NavLink>
           ))}
         </nav>
-
-        {/* Footer / System Status */}
-        <div className="px-lg pt-md mt-auto border-t border-outline-variant/60">
-          <div className="flex items-center justify-between p-sm bg-surface-container-low rounded-lg border border-outline-variant/50">
-            <div className="flex items-center gap-xs">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span className="text-xs font-semibold text-on-surface">OPS GRID ONLINE</span>
-            </div>
-            <span className="text-xs font-mono text-on-surface-variant">v2.4</span>
-          </div>
-        </div>
       </aside>
     </>
   );

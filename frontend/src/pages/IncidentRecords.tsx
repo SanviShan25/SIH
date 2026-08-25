@@ -79,7 +79,7 @@ export const IncidentRecords: React.FC = () => {
             className="bg-primary text-on-primary font-label-md text-xs font-bold py-2 px-4 rounded-lg flex items-center gap-1.5 hover:bg-primary/90 transition-colors shadow-xs"
           >
             <span className="material-symbols-outlined text-base">description</span>
-            View Latest Situation Report
+            View Assessment Report Generator
           </Link>
         </div>
       </div>

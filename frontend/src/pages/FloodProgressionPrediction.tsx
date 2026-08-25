@@ -7,7 +7,7 @@ export const FloodProgressionPrediction: React.FC = () => {
       <div className="flex flex-wrap justify-between items-end gap-4">
         <div>
           <h1 className="font-display-lg text-2xl md:text-display-lg text-on-surface font-bold">
-            Flood Progression & Prediction
+            Flood Impact Analysis
           </h1>
           <p className="font-body-lg text-sm md:text-body-lg text-on-surface-variant mt-1">
             Real-time water level regression analysis and predictive hydrological modeling.

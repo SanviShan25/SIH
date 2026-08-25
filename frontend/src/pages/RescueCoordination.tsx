@@ -25,7 +25,7 @@ export const RescueCoordination: React.FC = () => {
       <div className="flex flex-wrap justify-between items-end gap-4">
         <div>
           <h1 className="font-display-lg text-2xl md:text-display-lg text-on-background font-bold">
-            Rescue Coordination
+            Response Planning
           </h1>
           <p className="font-body-lg text-sm md:text-body-lg text-on-surface-variant mt-1">
             Live overview of deployed units, active field incidents, and resource availability.

@@ -10,12 +10,12 @@ const pageTitles: Record<string, { title: string; category?: string }> = {
   '/flood-map': { title: 'Flood Map Intelligence', category: 'GIS & Satellite' },
   '/drone-missions': { title: 'Drone Mission Control', category: 'Autonomous Aerial Ops' },
   '/detection-analysis': { title: 'Detection & Analysis Workspace', category: 'Computer Vision AI' },
-  '/rescue-coordination': { title: 'Rescue Coordination', category: 'Field Operations' },
+  '/rescue-coordination': { title: 'Response Planning', category: 'Field Operations' },
   '/relief-camps': { title: 'Relief Camps Oversight', category: 'Logistics & Camp Welfare' },
   '/alerts': { title: 'Emergency Alert Management', category: 'Public Warning System' },
   '/incident-records': { title: 'Incident Records & Logs', category: 'Historical Archive' },
-  '/flood-progression': { title: 'Flood Progression & Prediction', category: 'Hydrological Modeling' },
-  '/flood-report': { title: 'Comprehensive Flood Report', category: 'Executive Summary' },
+  '/flood-progression': { title: 'Flood Impact Analysis', category: 'Hydrological Modeling' },
+  '/flood-report': { title: 'Assessment Report Generator', category: 'Executive Summary' },
 };
 
 export const Topbar: React.FC<TopbarProps> = ({ onToggleMobile }) => {

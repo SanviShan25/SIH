@@ -9,7 +9,7 @@ export const FloodReport: React.FC = () => {
         <div className="bg-surface-container py-4 px-6 border-b border-outline-variant flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="font-headline-lg text-xl md:text-2xl font-bold text-on-surface">
-              FLOOD SITUATION REPORT - Sector 12
+              ASSESSMENT REPORT GENERATOR - Sector 12
             </h1>
             <p className="font-body-md text-xs md:text-sm text-on-surface-variant mt-1">
               Generated: 2023-10-27 14:45 UTC
@@ -59,8 +59,7 @@ export const FloodReport: React.FC = () => {
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
                   <td className="py-3.5 px-4 font-medium text-on-surface">Victims Detected</td>
                   <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-error-container/20 border border-error text-error text-xs font-semibold">
-                      <span className="material-symbols-outlined text-[15px] mr-1 fill">warning</span>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded bg-error-container/30 border border-error text-error text-xs font-semibold">
                       7
                     </span>
                   </td>
@@ -69,20 +68,20 @@ export const FloodReport: React.FC = () => {
                 {/* Row 3 */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
                   <td className="py-3.5 px-4 font-medium text-on-surface">Road Blockage</td>
-                  <td className="py-3.5 px-4 text-on-surface-variant">2 Major Routes</td>
+                  <td className="py-3.5 px-4 text-on-surface">2 Major Routes</td>
                 </tr>
 
                 {/* Row 4 */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
                   <td className="py-3.5 px-4 font-medium text-on-surface">Submerged Roads</td>
-                  <td className="py-3.5 px-4 text-on-surface-variant">3 Intersections</td>
+                  <td className="py-3.5 px-4 text-on-surface">3 Intersections</td>
                 </tr>
 
                 {/* Row 5 */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
                   <td className="py-3.5 px-4 font-medium text-on-surface">Bridge Status</td>
                   <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-tertiary-container/10 border border-tertiary-container text-tertiary-container text-xs font-semibold">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded bg-tertiary-container/10 border border-tertiary-container text-tertiary-container text-xs font-semibold">
                       Risk Detected
                     </span>
                   </td>
@@ -91,18 +90,15 @@ export const FloodReport: React.FC = () => {
                 {/* Row 6 */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
                   <td className="py-3.5 px-4 font-medium text-on-surface">Nearest Relief Camp</td>
-                  <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center text-primary font-medium">
-                      <span className="material-symbols-outlined text-[16px] mr-1">location_on</span>
-                      Camp A (2.4 km)
-                    </span>
+                  <td className="py-3.5 px-4 text-primary font-medium">
+                    Camp A (2.4 km)
                   </td>
                 </tr>
 
                 {/* Row 7 */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
                   <td className="py-3.5 px-4 font-medium text-on-surface">Boats Available</td>
-                  <td className="py-3.5 px-4 text-on-surface-variant">2 Units Active</td>
+                  <td className="py-3.5 px-4 text-on-surface">2 Units Active</td>
                 </tr>
               </tbody>
             </table>
