@@ -26,8 +26,8 @@ export const OperationalDashboard: React.FC = () => {
           {/* Stat Card 2 */}
           <div className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs">
             <div className="flex justify-between items-center text-on-surface-variant">
-              <span className="font-label-md text-label-md uppercase tracking-wider">Victims Detected</span>
-              <span className="material-symbols-outlined text-error" data-icon="person_alert">person_alert</span>
+              <span className="font-label-md text-label-md uppercase tracking-wider">Impacted Zones</span>
+              <span className="material-symbols-outlined text-error" data-icon="crisis_alert">crisis_alert</span>
             </div>
             <div className="flex items-baseline gap-sm">
               <span className="font-headline-lg text-headline-lg text-error">7</span>
@@ -78,7 +78,7 @@ export const OperationalDashboard: React.FC = () => {
             <h2 className="font-headline-md text-headline-md text-on-surface">Live GIS Map</h2>
             <div className="flex flex-wrap gap-sm">
               <span className="flex items-center gap-base px-sm py-1 rounded bg-error/10 border border-error text-error font-label-md text-label-md">
-                <span className="w-2 h-2 rounded-full bg-error"></span> Victims
+                <span className="w-2 h-2 rounded-full bg-error"></span> Impacted Zones
               </span>
               <span className="flex items-center gap-base px-sm py-1 rounded bg-primary-container/10 border border-primary-container text-primary-container font-label-md text-label-md">
                 <span className="w-2 h-2 rounded-full bg-primary-container"></span> Flood Water
@@ -138,7 +138,7 @@ export const OperationalDashboard: React.FC = () => {
                 </span>
                 <span className="font-label-md text-label-md text-on-surface-variant">14:32</span>
               </div>
-              <h3 className="font-body-md text-body-md font-semibold text-on-surface">NEW VICTIMS DETECTED</h3>
+              <h3 className="font-body-md text-body-md font-semibold text-on-surface">NEW IMPACTED ZONE DETECTED</h3>
               <div className="font-data-mono text-data-mono text-on-surface-variant text-sm">
                 Loc: Sector 12<br />
                 Src: DRONE-001
