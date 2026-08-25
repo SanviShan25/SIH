@@ -194,40 +194,13 @@ export const EmergencyAlertManagement: React.FC = () => {
               </div>
 
               <div className="text-right">
-                <span className="text-xs font-semibold text-on-surface-variant block">Audience Delivery</span>
-                <span className="font-mono text-base font-bold text-emerald-700">{selectedAlert.reach || 'Broadcasted'}</span>
+                <span className="text-xs font-semibold text-on-surface-variant block">Broadcast Status</span>
+                <span className="font-mono text-sm font-bold text-emerald-700">● Active Live</span>
               </div>
             </div>
 
             <div className="mt-4 p-3 bg-surface-container-low rounded-lg border border-outline-variant">
               <p className="text-xs font-mono text-on-surface whitespace-pre-wrap">{selectedAlert.body}</p>
-            </div>
-
-            {/* Delivery Channels */}
-            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="p-2.5 rounded-lg border border-outline-variant bg-surface-bright flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-base">sms</span>
-                  <span className="font-semibold text-on-surface">SMS Broadcast</span>
-                </div>
-                <span className="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
-              </div>
-
-              <div className="p-2.5 rounded-lg border border-outline-variant bg-surface-bright flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-base">smartphone</span>
-                  <span className="font-semibold text-on-surface">App Push</span>
-                </div>
-                <span className="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
-              </div>
-
-              <div className="p-2.5 rounded-lg border border-outline-variant bg-surface-bright flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-primary text-base">radio</span>
-                  <span className="font-semibold text-on-surface">EAS Radio Alert</span>
-                </div>
-                <span className="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
-              </div>
             </div>
           </section>
         ) : null}
@@ -281,7 +254,7 @@ export const EmergencyAlertManagement: React.FC = () => {
             </div>
 
             <div className="flex flex-col gap-1">
-              <label className="font-semibold text-on-surface">Message Instructions (SMS / Push)</label>
+              <label className="font-semibold text-on-surface">Message Instructions / Advisory Body</label>
               <textarea
                 value={newBody}
                 onChange={(e) => setNewBody(e.target.value)}
@@ -292,23 +265,6 @@ export const EmergencyAlertManagement: React.FC = () => {
               <span className="text-[10px] text-on-surface-variant self-end font-mono">
                 {newBody.length} / 160 chars
               </span>
-            </div>
-
-            {/* Channels Checkboxes */}
-            <div className="border-t border-outline-variant pt-3 flex flex-wrap gap-4 items-center">
-              <span className="font-semibold text-on-surface">Distribution Channels:</span>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" defaultChecked className="rounded border-outline-variant text-primary" />
-                <span>SMS Direct</span>
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" defaultChecked className="rounded border-outline-variant text-primary" />
-                <span>App Push Notification</span>
-              </label>
-              <label className="flex items-center gap-1.5 cursor-pointer">
-                <input type="checkbox" className="rounded border-outline-variant text-primary" />
-                <span>Emergency Broadcast Radio</span>
-              </label>
             </div>
 
             {/* Buttons */}

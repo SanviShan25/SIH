@@ -4,6 +4,7 @@ import { Logo } from '../components/Logo';
 import { getDashboardSummary } from '../api/disasterApi';
 import type { DashboardSummaryResponse } from '../api/disasterApi';
 import { getSocket } from '../api/socketClient';
+import { DisasterGoogleMap } from '../components/DisasterGoogleMap';
 
 export const OperationalDashboard: React.FC = () => {
   const [data, setData] = useState<DashboardSummaryResponse | null>(null);
@@ -190,67 +191,19 @@ export const OperationalDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex-1 relative bg-[#eef2f5] min-h-[350px]" data-location="Sector 12">
-            {/* GIS Map Image Background */}
-            <div
-              className="w-full h-full bg-cover bg-center absolute inset-0"
-              data-alt="Top-down GIS map of urban flood zones"
-              style={{
-                backgroundImage: `url('https://lh3.googleusercontent.com/aida-public/AB6AXuDHUHvTauXo11PCYMgAxhVjsv8KX3CJ5ULE8I21bP8zvnBzbg2VoCYmtdcYFE13HdSBZGFpZZcmSkh2-QELLretfBtt5chwktUPXkd7m3YGYCGiqSEj3R6MiDMy6b77vqI0pFPUKnL9C4GsS5GetoLqAQPB_mAzXLo-Y4I-V0_xZ451Ezr7NVUW156dSFl9qtCcppZLZTGudciGkmg_i1yDEu5-RBdsmQlwTX1ZgCHBXtiAzIHAaR2j')`,
+          <div className="flex-1 relative min-h-[360px] overflow-hidden rounded-b-lg" data-location="Sector 12">
+            <DisasterGoogleMap
+              layers={{
+                waterLevels: true,
+                waterSpread: true,
+                settlements: true,
+                roadStatus: true,
+                infrastructure: true,
+                activeAssets: true,
+                safeRoutes: true,
               }}
+              className="w-full h-full min-h-[360px]"
             />
-
-            {/* Water Spread Direction Overlay Vector */}
-            <div className="absolute top-[32%] left-[44%] pointer-events-none flex items-center gap-1 bg-primary/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-full backdrop-blur-xs shadow-md border border-white/40 animate-pulse">
-              <span className="material-symbols-outlined text-[13px]">south_east</span>
-              <span>Spread: South-East (+13%)</span>
-            </div>
-
-            {/* Map Overlay Markers - Settlements */}
-            <div className="absolute top-[34%] left-[46%] flex flex-col items-center cursor-pointer group">
-              <div className="w-3.5 h-3.5 rounded-full bg-error animate-ping absolute" />
-              <div className="w-3.5 h-3.5 rounded-full bg-error border-2 border-white shadow-sm relative flex items-center justify-center">
-              </div>
-              <div className="bg-error text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow-xs mt-0.5 whitespace-nowrap">
-                Sector 12 Village (Affected)
-              </div>
-            </div>
-
-            <div className="absolute top-[56%] left-[50%] flex flex-col items-center cursor-pointer group">
-              <div className="w-3 h-3 rounded-full bg-error border-2 border-white shadow-sm" />
-              <div className="bg-error-container text-error text-[9px] font-bold px-1.5 py-0.2 rounded shadow-xs mt-0.5 whitespace-nowrap border border-error/30">
-                Riverside Colony (Submerged)
-              </div>
-            </div>
-
-            {/* Infrastructure Markers */}
-            <div className="absolute top-[40%] left-[45%] flex flex-col items-center cursor-pointer">
-              <div className="bg-[#f59e0b] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm border border-white flex items-center gap-0.5">
-                <span className="material-symbols-outlined text-[11px]">deck</span> Bridge B-02 (Risk)
-              </div>
-            </div>
-
-            <div className="absolute top-[30%] left-[72%] flex flex-col items-center cursor-pointer">
-              <div className="bg-emerald-700 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm border border-white flex items-center gap-0.5">
-                <span className="material-symbols-outlined text-[11px]">local_hospital</span> Hospital H-01 (Safe)
-              </div>
-            </div>
-
-            {/* Relief Camp Pin */}
-            <div className="absolute top-[68%] left-[62%] bg-[#10b981] text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm border border-white flex items-center gap-0.5 cursor-pointer">
-              <span className="material-symbols-outlined text-[12px]">home</span> Camp Alpha (2.4 km)
-            </div>
-
-            {/* Map Zoom Controls */}
-            <div className="absolute bottom-md right-md bg-surface-container-lowest border border-outline-variant p-1 rounded-lg shadow-sm flex flex-col gap-1">
-              <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-low transition-colors text-on-surface">
-                <span className="material-symbols-outlined text-sm" data-icon="add">add</span>
-              </button>
-              <div className="h-px bg-outline-variant w-full" />
-              <button className="w-8 h-8 flex items-center justify-center rounded hover:bg-surface-container-low transition-colors text-on-surface">
-                <span className="material-symbols-outlined text-sm" data-icon="remove">remove</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>
