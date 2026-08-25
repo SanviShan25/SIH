@@ -1,5 +1,4 @@
 import React from 'react';
-import { settlementsData, infrastructureData, roadAccessibilityData, waterSpreadData } from '../data/mockData';
 
 export const FloodReport: React.FC = () => {
   return (
@@ -38,113 +37,81 @@ export const FloodReport: React.FC = () => {
             <table className="w-full text-left border-collapse font-body-md text-sm">
               <thead>
                 <tr className="border-b-2 border-outline-variant bg-surface-container-low text-primary font-bold uppercase tracking-wider text-xs">
-                  <th className="py-3 px-4 w-1/2">Assessment Parameter</th>
-                  <th className="py-3 px-4 w-1/2">Status / Value</th>
+                  <th className="py-3.5 px-4 w-1/2">ASSESSMENT PARAMETER</th>
+                  <th className="py-3.5 px-4 w-1/2">STATUS / VALUE</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/50 text-on-surface">
                 {/* 1. Area */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3 px-4 font-medium text-on-surface">Area</td>
-                  <td className="py-3 px-4 font-semibold text-on-surface">Sector 12</td>
+                  <td className="py-3.5 px-4">Area</td>
+                  <td className="py-3.5 px-4">Sector 12</td>
                 </tr>
 
                 {/* 2. Water Coverage */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3 px-4 font-medium text-on-surface">Water Coverage</td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-28 bg-surface-variant h-2 rounded-full overflow-hidden">
-                        <div className="bg-primary-container h-full rounded-full" style={{ width: `${waterSpreadData.coveragePercentage}%` }} />
-                      </div>
-                      <span className="font-semibold">{waterSpreadData.coveragePercentage}%</span>
-                    </div>
-                  </td>
+                  <td className="py-3.5 px-4">Water Coverage</td>
+                  <td className="py-3.5 px-4">68%</td>
                 </tr>
 
                 {/* 3. Water Spread */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3 px-4 font-medium text-on-surface">Water Spread</td>
-                  <td className="py-3 px-4">
-                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-blue-100 text-primary-container text-xs font-semibold">
-                      {waterSpreadData.trend} ({waterSpreadData.direction}, {waterSpreadData.changeSincePreviousSurvey})
-                    </span>
-                  </td>
+                  <td className="py-3.5 px-4">Water Spread</td>
+                  <td className="py-3.5 px-4">Increasing (South-East, +13%)</td>
                 </tr>
 
                 {/* 4. Affected Settlements */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3 px-4 font-medium text-on-surface">Affected Settlements</td>
-                  <td className="py-3 px-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded bg-error-container/30 border border-error text-error text-xs font-semibold">
-                      {settlementsData.length} Settlements Inundated
-                    </span>
-                  </td>
+                  <td className="py-3.5 px-4">Affected Settlements</td>
+                  <td className="py-3.5 px-4">5 Settlements Inundated</td>
                 </tr>
 
                 {/* 5. Victims Detected */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3 px-4 font-medium text-on-surface">Victims Detected</td>
-                  <td className="py-3 px-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded bg-error-container/30 border border-error text-error text-xs font-semibold">
-                      7
-                    </span>
-                  </td>
+                  <td className="py-3.5 px-4">Victims Detected</td>
+                  <td className="py-3.5 px-4">7</td>
                 </tr>
 
                 {/* 6. Road Blockage */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3 px-4 font-medium text-on-surface">Road Blockage</td>
-                  <td className="py-3 px-4 text-on-surface">{roadAccessibilityData.blockedRoads} Major Routes (Highway 4, Bridge Rd)</td>
+                  <td className="py-3.5 px-4">Road Blockage</td>
+                  <td className="py-3.5 px-4">2 Major Routes (Highway 4, Bridge Rd)</td>
                 </tr>
 
                 {/* 7. Submerged Roads */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3 px-4 font-medium text-on-surface">Submerged Roads</td>
-                  <td className="py-3 px-4 text-on-surface">{roadAccessibilityData.submergedRoads} Intersections (&gt;0.8m Depth)</td>
+                  <td className="py-3.5 px-4">Submerged Roads</td>
+                  <td className="py-3.5 px-4">3 Intersections (&gt;0.8m Depth)</td>
                 </tr>
 
                 {/* 8. Road Accessibility */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3 px-4 font-medium text-on-surface">Road Accessibility</td>
-                  <td className="py-3 px-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-28 bg-surface-variant h-2 rounded-full overflow-hidden">
-                        <div className="bg-[#f59e0b] h-full rounded-full" style={{ width: `${roadAccessibilityData.overallPercentage}%` }} />
-                      </div>
-                      <span className="font-semibold">{roadAccessibilityData.overallPercentage}% Passable ({roadAccessibilityData.openRoads} Open)</span>
-                    </div>
-                  </td>
+                  <td className="py-3.5 px-4">Road Accessibility</td>
+                  <td className="py-3.5 px-4">62% Passable (12 Open)</td>
                 </tr>
 
                 {/* 9. Infrastructure Impact */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3 px-4 font-medium text-on-surface">Infrastructure Impact</td>
-                  <td className="py-3 px-4 text-on-surface">{infrastructureData.length} Monitored Facilities</td>
+                  <td className="py-3.5 px-4">Infrastructure Impact</td>
+                  <td className="py-3.5 px-4">4 Monitored Facilities</td>
                 </tr>
 
                 {/* 10. Bridge Status */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3 px-4 font-medium text-on-surface">Bridge Status</td>
-                  <td className="py-3 px-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded bg-tertiary-container/10 border border-tertiary-container text-tertiary-container text-xs font-semibold">
-                      Risk Detected (Bridge B-02)
-                    </span>
-                  </td>
+                  <td className="py-3.5 px-4">Bridge Status</td>
+                  <td className="py-3.5 px-4">Risk Detected (Bridge B-02)</td>
                 </tr>
 
                 {/* 11. Nearest Relief Camp */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3 px-4 font-medium text-on-surface">Nearest Relief Camp</td>
-                  <td className="py-3 px-4 text-primary font-medium">
-                    Camp A (2.4 km)
-                  </td>
+                  <td className="py-3.5 px-4">Nearest Relief Camp</td>
+                  <td className="py-3.5 px-4">Camp A (2.4 km)</td>
                 </tr>
 
                 {/* 12. Boats Available */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3 px-4 font-medium text-on-surface">Boats Available</td>
-                  <td className="py-3 px-4 text-on-surface">2 Active Units Ready for Dispatch</td>
+                  <td className="py-3.5 px-4">Boats Available</td>
+                  <td className="py-3.5 px-4">2 Active Units Ready for Dispatch</td>
                 </tr>
               </tbody>
             </table>
