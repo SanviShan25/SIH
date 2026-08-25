@@ -8,29 +8,23 @@ export const FloodReport: React.FC = () => {
         {/* Report Header */}
         <div className="bg-surface-container py-4 px-6 border-b border-outline-variant flex flex-wrap items-center justify-between gap-4">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded tracking-wider uppercase">
-                Official SitRep
-              </span>
-              <span className="font-mono text-xs text-on-surface-variant">DOC-ID: SITREP-2023-1027-12</span>
-            </div>
-            <h1 className="font-headline-lg text-xl md:text-2xl font-extrabold text-on-surface">
+            <h1 className="font-headline-lg text-xl md:text-2xl font-bold text-on-surface">
               FLOOD SITUATION REPORT - Sector 12
             </h1>
-            <p className="font-body-md text-xs text-on-surface-variant mt-1">
-              Generated: 2023-10-27 14:45 UTC · Source: SKY GUARDIANS Automated Telemetry
+            <p className="font-body-md text-xs md:text-sm text-on-surface-variant mt-1">
+              Generated: 2023-10-27 14:45 UTC
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => window.print()}
-              className="font-label-md text-xs font-bold bg-surface border border-outline-variant text-on-surface hover:bg-surface-container px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+              className="font-label-md text-xs font-semibold bg-surface border border-outline-variant text-on-surface hover:bg-surface-container px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
             >
               <span className="material-symbols-outlined text-base">print</span>
-              Print SitRep
+              Print
             </button>
-            <button className="font-label-md text-xs font-bold bg-primary text-on-primary hover:bg-primary/90 px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer">
+            <button className="font-label-md text-xs font-semibold bg-primary text-on-primary hover:bg-primary/90 px-3.5 py-2 rounded-lg flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer">
               <span className="material-symbols-outlined text-base">download</span>
               Export PDF
             </button>
@@ -40,116 +34,78 @@ export const FloodReport: React.FC = () => {
         {/* Report Body Table */}
         <div className="p-4 md:p-6">
           <div className="overflow-x-auto rounded-lg border border-outline-variant">
-            <table className="w-full text-left border-collapse text-xs md:text-sm">
+            <table className="w-full text-left border-collapse font-body-md text-sm">
               <thead>
-                <tr className="border-b border-outline-variant bg-surface-container-low text-primary font-bold uppercase tracking-wider">
-                  <th className="py-3 px-4 w-1/2">Assessment Parameter</th>
-                  <th className="py-3 px-4 w-1/2">Current Status / Observation</th>
+                <tr className="border-b-2 border-outline-variant bg-surface-container-low text-primary font-bold uppercase tracking-wider text-xs">
+                  <th className="py-3 px-4 w-1/2">Parameter</th>
+                  <th className="py-3 px-4 w-1/2">Status / Value</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-outline-variant/60 font-body-md text-on-surface">
+              <tbody className="divide-y divide-outline-variant/50 text-on-surface">
                 {/* Row 1 */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary-container text-base">water</span>
-                    Water Coverage
-                  </td>
+                  <td className="py-3.5 px-4 font-medium text-on-surface">Water Coverage</td>
                   <td className="py-3.5 px-4">
                     <div className="flex items-center gap-3">
-                      <div className="w-32 bg-surface-variant h-2.5 rounded-full overflow-hidden">
+                      <div className="w-28 bg-surface-variant h-2 rounded-full overflow-hidden">
                         <div className="bg-primary-container h-full rounded-full" style={{ width: '68%' }} />
                       </div>
-                      <span className="font-mono font-bold text-on-surface">68% Total Inundation</span>
+                      <span className="font-medium">68%</span>
                     </div>
                   </td>
                 </tr>
 
                 {/* Row 2 */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-2">
-                    <span className="material-symbols-outlined text-error text-base">person_alert</span>
-                    Victims Detected (AI Vision)
-                  </td>
+                  <td className="py-3.5 px-4 font-medium text-on-surface">Victims Detected</td>
                   <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-error-container text-error text-xs font-bold border border-error/30">
-                      <span className="material-symbols-outlined text-[16px] mr-1.5 fill">warning</span>
-                      7 Persons Stranded (Sector 12 North)
+                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-error-container/20 border border-error text-error text-xs font-semibold">
+                      <span className="material-symbols-outlined text-[15px] mr-1 fill">warning</span>
+                      7
                     </span>
                   </td>
                 </tr>
 
                 {/* Row 3 */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#f59e0b] text-base">block</span>
-                    Road Blockages
-                  </td>
-                  <td className="py-3.5 px-4 text-on-surface-variant font-mono">
-                    2 Major Arterial Routes Blocked (Highway 4, Bridge Rd)
-                  </td>
+                  <td className="py-3.5 px-4 font-medium text-on-surface">Road Blockage</td>
+                  <td className="py-3.5 px-4 text-on-surface-variant">2 Major Routes</td>
                 </tr>
 
                 {/* Row 4 */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary-container text-base">waves</span>
-                    Submerged Roads
-                  </td>
-                  <td className="py-3.5 px-4 text-on-surface-variant font-mono">
-                    3 Primary Intersections (&gt;0.8m Depth)
-                  </td>
+                  <td className="py-3.5 px-4 font-medium text-on-surface">Submerged Roads</td>
+                  <td className="py-3.5 px-4 text-on-surface-variant">3 Intersections</td>
                 </tr>
 
                 {/* Row 5 */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#a33500] text-base">bridge</span>
-                    Bridge Structural Status
-                  </td>
+                  <td className="py-3.5 px-4 font-medium text-on-surface">Bridge Status</td>
                   <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center px-2.5 py-1 rounded-md bg-[#ffdbcf] text-[#a33500] text-xs font-bold border border-[#a33500]/30">
-                      Structural Risk Detected · Flow Shear 12k m³/s
+                    <span className="inline-flex items-center px-2 py-0.5 rounded bg-tertiary-container/10 border border-tertiary-container text-tertiary-container text-xs font-semibold">
+                      Risk Detected
                     </span>
                   </td>
                 </tr>
 
                 {/* Row 6 */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-2">
-                    <span className="material-symbols-outlined text-primary text-base">location_away</span>
-                    Nearest Active Relief Camp
-                  </td>
+                  <td className="py-3.5 px-4 font-medium text-on-surface">Nearest Relief Camp</td>
                   <td className="py-3.5 px-4">
-                    <span className="inline-flex items-center text-primary font-bold">
+                    <span className="inline-flex items-center text-primary font-medium">
                       <span className="material-symbols-outlined text-[16px] mr-1">location_on</span>
-                      Camp Alpha / Sector 14 Shelter (2.4 km)
+                      Camp A (2.4 km)
                     </span>
                   </td>
                 </tr>
 
                 {/* Row 7 */}
                 <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4 font-semibold text-on-surface flex items-center gap-2">
-                    <span className="material-symbols-outlined text-emerald-600 text-base">sailing</span>
-                    Available Rescue Boats
-                  </td>
-                  <td className="py-3.5 px-4 text-on-surface font-semibold font-mono">
-                    2 Active Units Ready for Dispatch
-                  </td>
+                  <td className="py-3.5 px-4 font-medium text-on-surface">Boats Available</td>
+                  <td className="py-3.5 px-4 text-on-surface-variant">2 Units Active</td>
                 </tr>
               </tbody>
             </table>
-          </div>
-        </div>
-
-        {/* Report Footer */}
-        <div className="bg-surface py-3 px-6 border-t border-outline-variant flex flex-wrap justify-between items-center gap-3 text-xs">
-          <p className="font-label-md text-on-surface-variant uppercase tracking-wider text-[11px]">
-            Official sitrep generated by National Disaster Response Operations
-          </p>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-            <span className="font-mono text-on-surface font-semibold">VERIFIED & ARCHIVED</span>
           </div>
         </div>
       </div>
