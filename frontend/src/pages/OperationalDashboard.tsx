@@ -1,9 +1,68 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Logo } from '../components/Logo';
-import { settlementsData, infrastructureData, roadAccessibilityData, waterSpreadData } from '../data/mockData';
+import { getDashboardSummary } from '../api/disasterApi';
+import type { DashboardSummaryResponse } from '../api/disasterApi';
+import { getSocket } from '../api/socketClient';
 
 export const OperationalDashboard: React.FC = () => {
+  const [data, setData] = useState<DashboardSummaryResponse | null>(null);
+  const [liveTelemetry, setLiveTelemetry] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function loadData() {
+      try {
+        const summary = await getDashboardSummary();
+        if (isMounted) {
+          setData(summary);
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard summary:', err);
+      }
+    }
+
+    loadData();
+
+    // Subscribe to live telemetry and alerts
+    const socket = getSocket();
+    socket.on('telemetry:update', (telemetry) => {
+      if (isMounted) setLiveTelemetry(telemetry);
+    });
+
+    socket.on('alert:new', (newAlert) => {
+      if (isMounted) {
+        setData((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            recentAlerts: [newAlert, ...prev.recentAlerts.slice(0, 2)],
+          };
+        });
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      socket.off('telemetry:update');
+      socket.off('alert:new');
+    };
+  }, []);
+
+  const waterSpread = data?.waterSpread || {
+    coveragePercentage: 68,
+    trend: 'Increasing',
+    direction: 'South-East',
+    changeSincePreviousSurvey: '+13%',
+  };
+
+  const settlements = data?.settlements || { totalCount: 5, inundatedCount: 5 };
+  const roadAccessibility = data?.roadAccessibility || { overallPercentage: 62, openRoads: 12, blockedRoads: 2, submergedRoads: 3 };
+  const infrastructureImpact = data?.infrastructureImpact || { totalTracked: 4, atRisk: 1, flooded: 1, accessible: 2 };
+  const dronesAvailable = data?.dronesAvailable || { active: 1, standby: 1, total: 2 };
+  const alerts = data?.recentAlerts || [];
+
   return (
     <div className="p-4 md:p-6 lg:p-gutter w-full h-full flex flex-col xl:flex-row gap-gutter">
       {/* Left / Center Section */}
@@ -20,14 +79,14 @@ export const OperationalDashboard: React.FC = () => {
               <span className="material-symbols-outlined text-primary-container" data-icon="water">water</span>
             </div>
             <div className="flex items-baseline gap-sm">
-              <span className="font-headline-lg text-headline-lg text-on-surface">{waterSpreadData.coveragePercentage}%</span>
+              <span className="font-headline-lg text-headline-lg text-on-surface">{waterSpread.coveragePercentage}%</span>
               <span className="font-data-mono text-data-mono text-error flex items-center text-xs font-semibold">
                 <span className="material-symbols-outlined text-[14px]" data-icon="trending_up">trending_up</span>
-                {waterSpreadData.changeSincePreviousSurvey}
+                {waterSpread.changeSincePreviousSurvey}
               </span>
             </div>
             <div className="flex items-center gap-1 text-[11px] text-on-surface-variant font-medium">
-              <span>Spread: {waterSpreadData.trend} ({waterSpreadData.direction})</span>
+              <span>Spread: {waterSpread.trend} ({waterSpread.direction})</span>
             </div>
             <div className="absolute bottom-0 left-0 h-1 bg-primary-container w-[68%] transition-all"></div>
           </Link>
@@ -42,7 +101,7 @@ export const OperationalDashboard: React.FC = () => {
               <span className="material-symbols-outlined text-error" data-icon="location_city">location_city</span>
             </div>
             <div className="flex items-baseline gap-sm">
-              <span className="font-headline-lg text-headline-lg text-error">{settlementsData.length}</span>
+              <span className="font-headline-lg text-headline-lg text-error">{settlements.totalCount}</span>
               <span className="text-[11px] text-error font-medium">Zones Inundated</span>
             </div>
             <div className="text-[11px] text-on-surface-variant truncate font-medium">
@@ -61,11 +120,11 @@ export const OperationalDashboard: React.FC = () => {
               <span className="material-symbols-outlined text-[#f59e0b]" data-icon="alt_route">alt_route</span>
             </div>
             <div className="flex items-baseline gap-sm">
-              <span className="font-headline-lg text-headline-lg text-on-surface">{roadAccessibilityData.overallPercentage}%</span>
+              <span className="font-headline-lg text-headline-lg text-on-surface">{roadAccessibility.overallPercentage}%</span>
               <span className="text-[11px] text-on-surface-variant font-medium">Accessible</span>
             </div>
             <div className="text-[11px] text-on-surface-variant truncate font-medium">
-              {roadAccessibilityData.openRoads} Open · {roadAccessibilityData.blockedRoads} Blocked · {roadAccessibilityData.submergedRoads} Submerged
+              {roadAccessibility.openRoads} Open · {roadAccessibility.blockedRoads} Blocked · {roadAccessibility.submergedRoads} Submerged
             </div>
             <div className="absolute bottom-0 left-0 h-1 bg-[#f59e0b] w-[62%] opacity-80"></div>
           </Link>
@@ -80,11 +139,11 @@ export const OperationalDashboard: React.FC = () => {
               <span className="material-symbols-outlined text-primary-container" data-icon="domain">domain</span>
             </div>
             <div className="flex items-baseline gap-sm">
-              <span className="font-headline-lg text-headline-lg text-on-surface">{infrastructureData.length}</span>
+              <span className="font-headline-lg text-headline-lg text-on-surface">{infrastructureImpact.totalTracked}</span>
               <span className="text-[11px] text-on-surface-variant font-medium">Assets Tracked</span>
             </div>
             <div className="text-[11px] text-on-surface-variant truncate font-medium">
-              1 Risk · 1 Flooded · 2 Accessible
+              {infrastructureImpact.atRisk} Risk · {infrastructureImpact.flooded} Flooded · {infrastructureImpact.accessible} Accessible
             </div>
             <div className="absolute bottom-0 left-0 h-1 bg-primary-container w-full opacity-30"></div>
           </Link>
@@ -99,8 +158,10 @@ export const OperationalDashboard: React.FC = () => {
               <Logo className="w-8 h-7 text-[#10b981] shrink-0" />
             </div>
             <div className="flex items-baseline gap-sm">
-              <span className="font-headline-lg text-headline-lg text-on-surface">2</span>
-              <span className="text-[11px] text-emerald-600 font-medium">Mission Ready</span>
+              <span className="font-headline-lg text-headline-lg text-on-surface">{dronesAvailable.active + dronesAvailable.standby}</span>
+              <span className="text-[11px] text-emerald-600 font-medium">
+                {liveTelemetry ? `DRONE-001 · ${liveTelemetry.battery}%` : 'Mission Ready'}
+              </span>
             </div>
             <div className="text-[11px] text-on-surface-variant truncate font-medium">
               Drone-01 &amp; Drone-02
@@ -201,52 +262,38 @@ export const OperationalDashboard: React.FC = () => {
           <span className="text-[11px] font-mono text-on-surface-variant font-semibold">LIVE LOG</span>
         </div>
         <div className="flex-1 overflow-y-auto p-md flex flex-col gap-md">
-          {/* Critical Alert */}
-          <div className="border border-outline-variant rounded-lg bg-surface-bright relative overflow-hidden shadow-xs">
-            <div className="absolute left-0 top-0 bottom-0 w-1 bg-error" />
-            <div className="p-md pl-lg flex flex-col gap-sm">
+          {alerts.map((alert) => (
+            <div
+              key={alert.id}
+              className={`border border-outline-variant rounded-lg bg-surface-bright p-md flex flex-col gap-sm relative overflow-hidden shadow-xs ${
+                alert.severity === 'Critical' ? 'border-l-4 border-l-error' : ''
+              }`}
+            >
               <div className="flex justify-between items-start">
-                <span className="font-label-md text-label-md text-error font-bold flex items-center gap-xs">
-                  <span className="material-symbols-outlined text-[16px]" data-icon="warning">warning</span>
-                  CRITICAL ALERT
+                <span
+                  className={`font-label-md text-label-md flex items-center gap-xs font-bold ${
+                    alert.severity === 'Critical'
+                      ? 'text-error'
+                      : alert.severity === 'Warning'
+                      ? 'text-[#f59e0b]'
+                      : 'text-primary'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">
+                    {alert.severity === 'Critical' ? 'warning' : alert.severity === 'Warning' ? 'deck' : 'info'}
+                  </span>
+                  {alert.title}
                 </span>
-                <span className="font-label-md text-label-md text-on-surface-variant shrink-0">14:32</span>
+                <span className="font-label-md text-label-md text-on-surface-variant shrink-0">{alert.time}</span>
               </div>
-              <h3 className="font-body-md text-body-md font-semibold text-on-surface">NEW IMPACTED ZONE DETECTED</h3>
-              <div className="font-data-mono text-data-mono text-on-surface-variant text-sm">
-                Loc: Sector 12 Village<br />
-                Src: DRONE-001
-              </div>
-              <button className="mt-sm bg-surface-container-lowest border border-outline-variant text-primary font-label-md text-label-md py-sm px-md rounded hover:bg-surface-container-low transition-colors w-full flex items-center justify-center gap-xs">
-                <span className="material-symbols-outlined text-[16px]" data-icon="my_location">my_location</span>
-                View on Map
-              </button>
+              <p className="font-body-md text-body-md text-on-surface text-xs leading-relaxed">{alert.body}</p>
+              {alert.area && (
+                <div className="font-data-mono text-[10px] text-on-surface-variant font-semibold">
+                  Area: {alert.area}
+                </div>
+              )}
             </div>
-          </div>
-
-          {/* Infrastructure Alert */}
-          <div className="border border-outline-variant rounded-lg bg-surface-bright p-md flex flex-col gap-sm">
-            <div className="flex justify-between items-start">
-              <span className="font-label-md text-label-md text-tertiary-container flex items-center gap-xs font-bold">
-                <span className="material-symbols-outlined text-[16px]" data-icon="deck">deck</span>
-                INFRASTRUCTURE RISK
-              </span>
-              <span className="font-label-md text-label-md text-on-surface-variant shrink-0">14:20</span>
-            </div>
-            <h3 className="font-body-md text-body-md text-on-surface">Bridge B-02: Flow shear 12k m³/s exceeding baseline.</h3>
-          </div>
-
-          {/* Road Accessibility Alert */}
-          <div className="border border-outline-variant rounded-lg bg-surface-bright p-md flex flex-col gap-sm">
-            <div className="flex justify-between items-start">
-              <span className="font-label-md text-label-md text-[#f59e0b] flex items-center gap-xs font-bold">
-                <span className="material-symbols-outlined text-[16px]" data-icon="alt_route">alt_route</span>
-                ROAD ACCESS UPDATE
-              </span>
-              <span className="font-label-md text-label-md text-on-surface-variant shrink-0">13:45</span>
-            </div>
-            <h3 className="font-body-md text-body-md text-on-surface">Highway 4 blocked by debris. North Ring Corridor open.</h3>
-          </div>
+          ))}
         </div>
       </div>
     </div>

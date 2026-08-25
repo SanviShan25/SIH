@@ -1,7 +1,29 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getLatestDetections } from '../api/disasterApi';
 
 export const DetectionAnalysisWorkspace: React.FC = () => {
   const [showBoundingBoxes, setShowBoundingBoxes] = useState(true);
+  const [detectionsData, setDetectionsData] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const data = await getLatestDetections();
+        if (isMounted) {
+          setDetectionsData(data);
+        }
+      } catch (err) {
+        console.error('Failed to load detection metadata:', err);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, []);
+
+  const victimsCount = detectionsData?.detections?.filter((d: any) => d.type === 'person').length || 7;
+  const boatsCount = detectionsData?.detections?.filter((d: any) => d.type === 'boat').length || 2;
+  const vehiclesCount = detectionsData?.detections?.filter((d: any) => d.type === 'vehicle').length || 3;
 
   return (
     <div className="p-4 md:p-6 lg:p-xl w-full min-h-full flex flex-col gap-6">
@@ -148,7 +170,7 @@ export const DetectionAnalysisWorkspace: React.FC = () => {
                     <p className="text-[11px] text-error font-semibold">Critical Priority</p>
                   </div>
                 </div>
-                <span className="font-data-mono text-2xl font-black text-error">7</span>
+                <span className="font-data-mono text-2xl font-black text-error">{victimsCount}</span>
               </div>
 
               {/* Boats */}
@@ -162,7 +184,7 @@ export const DetectionAnalysisWorkspace: React.FC = () => {
                     <p className="text-[11px] text-on-surface-variant">Active Assets</p>
                   </div>
                 </div>
-                <span className="font-data-mono text-2xl font-black text-primary-container">2</span>
+                <span className="font-data-mono text-2xl font-black text-primary-container">{boatsCount}</span>
               </div>
 
               {/* Vehicles */}
@@ -176,7 +198,7 @@ export const DetectionAnalysisWorkspace: React.FC = () => {
                     <p className="text-[11px] text-on-surface-variant">Stranded / Submerged</p>
                   </div>
                 </div>
-                <span className="font-data-mono text-2xl font-black text-[#a33500]">4</span>
+                <span className="font-data-mono text-2xl font-black text-[#a33500]">{vehiclesCount}</span>
               </div>
 
               {/* Obstacles */}

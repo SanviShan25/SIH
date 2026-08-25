@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { waterSpreadData, progressionTimeline } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { progressionTimeline } from '../data/mockData';
+import { getWaterCoverageSummary, getWaterCoverageZones } from '../api/disasterApi';
 
 interface InundationZone {
   id: string;
@@ -12,68 +13,46 @@ interface InundationZone {
   lastSurvey: string;
 }
 
-const mockZones: InundationZone[] = [
-  {
-    id: 'Z-01',
-    name: 'Sector 12 Riverbank & Lower Embankment',
-    waterDepth: '3.2m',
-    coveragePct: 88,
-    flowDirection: 'South-East (1.8 m/s)',
-    status: 'Critical Rise',
-    riskLevel: 'High',
-    lastSurvey: '14:30 UTC',
-  },
-  {
-    id: 'Z-02',
-    name: 'Riverside Agricultural Basin',
-    waterDepth: '2.1m',
-    coveragePct: 74,
-    flowDirection: 'South-East (1.4 m/s)',
-    status: 'Critical Rise',
-    riskLevel: 'High',
-    lastSurvey: '14:25 UTC',
-  },
-  {
-    id: 'Z-03',
-    name: 'East Lowland Catchment Area',
-    waterDepth: '1.4m',
-    coveragePct: 62,
-    flowDirection: 'East (0.9 m/s)',
-    status: 'Elevated',
-    riskLevel: 'Medium',
-    lastSurvey: '14:15 UTC',
-  },
-  {
-    id: 'Z-04',
-    name: 'Old Market Central Basin',
-    waterDepth: '0.8m',
-    coveragePct: 45,
-    flowDirection: 'South (0.6 m/s)',
-    status: 'Elevated',
-    riskLevel: 'Medium',
-    lastSurvey: '14:10 UTC',
-  },
-  {
-    id: 'Z-05',
-    name: 'North-West Ridge Drainage Corridor',
-    waterDepth: '0.3m',
-    coveragePct: 22,
-    flowDirection: 'South-East (1.1 m/s)',
-    status: 'Stable',
-    riskLevel: 'Low',
-    lastSurvey: '13:50 UTC',
-  },
-];
-
 export const WaterCoverage: React.FC = () => {
   const [filter, setFilter] = useState<'All' | 'High' | 'Medium' | 'Low'>('All');
   const [search, setSearch] = useState('');
+  const [summary, setSummary] = useState<any>(null);
+  const [zones, setZones] = useState<InundationZone[]>([]);
 
-  const filteredZones = mockZones.filter((z) => {
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const [sumData, zonesData] = await Promise.all([
+          getWaterCoverageSummary(),
+          getWaterCoverageZones(),
+        ]);
+        if (isMounted) {
+          setSummary(sumData);
+          setZones(zonesData);
+        }
+      } catch (err) {
+        console.error('Failed to load water coverage data:', err);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, []);
+
+  const filteredZones = zones.filter((z) => {
     const matchesFilter = filter === 'All' || z.riskLevel === filter;
     const matchesSearch = z.name.toLowerCase().includes(search.toLowerCase()) || z.id.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
+
+  const waterSpreadData = summary || {
+    coveragePercentage: 68,
+    trend: 'Increasing',
+    direction: 'South-East',
+    changeSincePreviousSurvey: '+13%',
+    peakHeight: '3.2m',
+    flowVelocity: '1.8 m/s',
+  };
 
   return (
     <div className="p-4 md:p-6 lg:p-xl w-full min-h-full flex flex-col gap-6">
@@ -167,7 +146,7 @@ export const WaterCoverage: React.FC = () => {
             <span className="material-symbols-outlined text-primary">grid_view</span>
           </div>
           <div className="text-2xl font-bold text-on-surface">
-            {mockZones.length} Sectors
+            {zones.length} Sectors
           </div>
           <p className="text-[11px] text-error mt-1 font-medium">
             2 Critical · 2 Elevated · 1 Stable

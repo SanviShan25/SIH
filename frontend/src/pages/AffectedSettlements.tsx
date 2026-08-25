@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { settlementsData } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { getSettlements } from '../api/disasterApi';
 
 interface SettlementDetail {
   id: string;
@@ -12,82 +12,34 @@ interface SettlementDetail {
   evacuationPriority: 'Immediate' | 'High' | 'Moderate' | 'Low';
   evacuatedPercentage: number;
   nearestCamp: string;
-  lastUpdated: string;
+  lastUpdated?: string;
+  lastSurvey?: string;
 }
-
-const mockSettlementDetails: SettlementDetail[] = [
-  {
-    id: 'SET-01',
-    name: 'Sector 12 Village',
-    location: 'Sector 12 North Riverbank',
-    status: 'Flood Affected',
-    population: 620,
-    households: 140,
-    waterDepth: '1.4m',
-    evacuationPriority: 'Immediate',
-    evacuatedPercentage: 65,
-    nearestCamp: 'Sector 14 Shelter (1.8 km)',
-    lastUpdated: '14:30 UTC',
-  },
-  {
-    id: 'SET-02',
-    name: 'Riverside Colony',
-    location: 'Sector 12 South Embankment',
-    status: 'Partially Submerged',
-    population: 450,
-    households: 95,
-    waterDepth: '1.8m',
-    evacuationPriority: 'Immediate',
-    evacuatedPercentage: 80,
-    nearestCamp: 'Riverside High School (1.2 km)',
-    lastUpdated: '14:25 UTC',
-  },
-  {
-    id: 'SET-03',
-    name: 'East Hamlet',
-    location: 'East Levee Approach',
-    status: 'Flood Affected',
-    population: 280,
-    households: 60,
-    waterDepth: '0.9m',
-    evacuationPriority: 'High',
-    evacuatedPercentage: 50,
-    nearestCamp: 'Camp Bravo (3.1 km)',
-    lastUpdated: '14:15 UTC',
-  },
-  {
-    id: 'SET-04',
-    name: 'Old Market Settlement',
-    location: 'Central Sector 12',
-    status: 'Partially Submerged',
-    population: 510,
-    households: 115,
-    waterDepth: '0.7m',
-    evacuationPriority: 'High',
-    evacuatedPercentage: 40,
-    nearestCamp: 'Sector 14 Shelter (2.4 km)',
-    lastUpdated: '14:10 UTC',
-  },
-  {
-    id: 'SET-05',
-    name: 'Greenfields Basti',
-    location: 'West Lowlands Catchment',
-    status: 'Flood Affected',
-    population: 340,
-    households: 75,
-    waterDepth: '1.1m',
-    evacuationPriority: 'Immediate',
-    evacuatedPercentage: 70,
-    nearestCamp: 'South Hills Stadium (2.9 km)',
-    lastUpdated: '13:55 UTC',
-  },
-];
 
 export const AffectedSettlements: React.FC = () => {
   const [filter, setFilter] = useState<'All' | 'Flood Affected' | 'Partially Submerged'>('All');
   const [search, setSearch] = useState('');
+  const [settlements, setSettlements] = useState<SettlementDetail[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
 
-  const filteredSettlements = mockSettlementDetails.filter((s) => {
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const res = await getSettlements(filter, search);
+        if (isMounted) {
+          setSettlements(res.settlements);
+          setMetrics(res.metrics);
+        }
+      } catch (err) {
+        console.error('Failed to load settlements:', err);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, [filter, search]);
+
+  const filteredSettlements = settlements.filter((s) => {
     const matchesFilter = filter === 'All' || s.status === filter;
     const matchesSearch =
       s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -96,8 +48,8 @@ export const AffectedSettlements: React.FC = () => {
     return matchesFilter && matchesSearch;
   });
 
-  const totalPopulation = mockSettlementDetails.reduce((sum, s) => sum + s.population, 0);
-  const totalHouseholds = mockSettlementDetails.reduce((sum, s) => sum + s.households, 0);
+  const totalPopulation = metrics?.totalPopulation || settlements.reduce((sum, s) => sum + s.population, 0);
+  const totalHouseholds = metrics?.totalHouseholds || settlements.reduce((sum, s) => sum + s.households, 0);
 
   return (
     <div className="p-4 md:p-6 lg:p-xl w-full min-h-full flex flex-col gap-6">
@@ -134,7 +86,7 @@ export const AffectedSettlements: React.FC = () => {
             <span className="material-symbols-outlined text-error">location_city</span>
           </div>
           <div className="text-2xl font-bold text-error">
-            {settlementsData.length} Zones
+            {settlements.length} Zones
           </div>
           <p className="text-[11px] text-error mt-1 font-medium">
             100% Monitored via Drone-001

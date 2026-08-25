@@ -1,7 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getSocket } from '../api/socketClient';
 
 export const DroneMissionControl: React.FC = () => {
   const [activeMediaTab, setActiveMediaTab] = useState<'all' | 'images' | 'videos'>('all');
+  const [telemetry, setTelemetry] = useState<any>({
+    battery: 84,
+    altitude: 120,
+    speed: 45,
+    coordinates: { lat: 28.6139, lng: 77.2090 },
+    signalQuality: 92,
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const socket = getSocket();
+
+    socket.on('telemetry:update', (data) => {
+      if (isMounted) {
+        setTelemetry(data);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      socket.off('telemetry:update');
+    };
+  }, []);
 
   return (
     <div className="p-4 md:p-6 lg:p-xl w-full min-h-full flex flex-col gap-6">
@@ -10,7 +34,7 @@ export const DroneMissionControl: React.FC = () => {
         <div>
           <h1 className="font-headline-lg text-headline-lg text-on-surface">Mission Command</h1>
           <p className="font-body-md text-body-md text-on-surface-variant mt-base">
-            Sector 12 Aerial Reconnaissance & Telemetry
+            Sector 12 Aerial Reconnaissance &amp; Telemetry
           </p>
         </div>
         <button className="bg-primary-container text-on-primary px-lg py-sm rounded-lg font-label-md text-label-md flex items-center gap-sm hover:bg-primary transition-colors shadow-xs cursor-pointer">
@@ -46,42 +70,44 @@ export const DroneMissionControl: React.FC = () => {
             {/* Telemetry Bento Grid */}
             <div>
               <h4 className="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider mb-3">
-                Telemetry & Avionics Data
+                Telemetry &amp; Avionics Data (Live Stream)
               </h4>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
                 {/* Battery */}
                 <div className="bg-surface-container border border-outline-variant rounded-lg p-3 flex flex-col items-center justify-center text-center">
                   <span className="material-symbols-outlined text-secondary mb-1">battery_charging_full</span>
-                  <span className="font-headline-md text-headline-md text-on-surface font-bold">84%</span>
+                  <span className="font-headline-md text-headline-md text-on-surface font-bold">{telemetry.battery}%</span>
                   <span className="text-[11px] text-on-surface-variant uppercase font-semibold">Battery Level</span>
                 </div>
 
                 {/* Altitude */}
                 <div className="bg-surface-container border border-outline-variant rounded-lg p-3 flex flex-col items-center justify-center text-center">
-                  <span className="material-symbols-outlined text-secondary mb-1">flight_takeoff</span>
-                  <span className="font-headline-md text-headline-md text-on-surface font-bold">120m</span>
-                  <span className="text-[11px] text-on-surface-variant uppercase font-semibold">Altitude AGL</span>
+                  <span className="material-symbols-outlined text-secondary mb-1">height</span>
+                  <span className="font-headline-md text-headline-md text-on-surface font-bold">{telemetry.altitude}m</span>
+                  <span className="text-[11px] text-on-surface-variant uppercase font-semibold">Altitude</span>
                 </div>
 
-                {/* Speed */}
+                {/* Ground Speed */}
                 <div className="bg-surface-container border border-outline-variant rounded-lg p-3 flex flex-col items-center justify-center text-center">
                   <span className="material-symbols-outlined text-secondary mb-1">speed</span>
-                  <span className="font-headline-md text-headline-md text-on-surface font-bold">45 km/h</span>
+                  <span className="font-headline-md text-headline-md text-on-surface font-bold">{telemetry.speed} km/h</span>
                   <span className="text-[11px] text-on-surface-variant uppercase font-semibold">Ground Speed</span>
                 </div>
 
-                {/* Coordinates */}
+                {/* GPS Coordinates */}
                 <div className="bg-surface-container border border-outline-variant rounded-lg p-3 flex flex-col items-center justify-center text-center">
                   <span className="material-symbols-outlined text-secondary mb-1">pin_drop</span>
-                  <span className="font-data-mono text-xs text-on-surface font-bold truncate w-full">28.61, 77.20</span>
+                  <span className="font-data-mono text-xs font-semibold text-on-surface">
+                    {telemetry.coordinates?.lat || 28.6139}, {telemetry.coordinates?.lng || 77.2090}
+                  </span>
                   <span className="text-[11px] text-on-surface-variant uppercase font-semibold">Coordinates</span>
                 </div>
 
                 {/* Signal Quality */}
                 <div className="bg-surface-container border border-outline-variant rounded-lg p-3 flex flex-col items-center justify-center text-center col-span-2 sm:col-span-1">
                   <span className="material-symbols-outlined text-secondary mb-1">cell_tower</span>
-                  <span className="font-headline-md text-headline-md text-on-surface font-bold">98%</span>
-                  <span className="text-[11px] text-on-surface-variant uppercase font-semibold">Link Signal</span>
+                  <span className="font-headline-md text-headline-md text-on-surface font-bold">{telemetry.signalQuality}%</span>
+                  <span className="text-[11px] text-on-surface-variant uppercase font-semibold">Signal Link</span>
                 </div>
               </div>
             </div>

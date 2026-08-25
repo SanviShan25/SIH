@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getFieldUnits } from '../api/disasterApi';
+import { getSocket } from '../api/socketClient';
 
 interface Unit {
   id: string;
@@ -9,15 +11,40 @@ interface Unit {
   personnel: number;
 }
 
-const initialUnits: Unit[] = [
-  { id: 'U-01', name: 'NDRF Team Alpha', type: 'Special Rescue Squad', location: 'Sector 12 (North)', status: 'En Route', personnel: 8 },
-  { id: 'U-02', name: 'Boat Unit 03', type: 'Zodiac Swiftwater', location: 'Riverbend District', status: 'On Site', personnel: 4 },
-  { id: 'U-03', name: 'Medical Response 1', type: 'Paramedic Mobile', location: 'Camp Bravo Base', status: 'Available', personnel: 6 },
-  { id: 'U-04', name: 'Air Recon Wing 2', type: 'Drone & Helicopter Hub', location: 'Sector 4 Airfield', status: 'On Site', personnel: 5 },
-];
-
 export const RescueCoordination: React.FC = () => {
-  const [units] = useState<Unit[]>(initialUnits);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [activeDeployed, setActiveDeployed] = useState(4);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const res = await getFieldUnits();
+        if (isMounted) {
+          setUnits(res.units as Unit[]);
+          setActiveDeployed(res.activeDeployed);
+        }
+      } catch (err) {
+        console.error('Failed to load field units:', err);
+      }
+    }
+    loadData();
+
+    const socket = getSocket();
+    socket.on('unit:deployed', (newUnit) => {
+      if (isMounted) setUnits((prev) => [...prev, newUnit]);
+    });
+
+    socket.on('unit:updated', (updatedUnit) => {
+      if (isMounted) setUnits((prev) => prev.map((u) => (u.id === updatedUnit.id ? updatedUnit : u)));
+    });
+
+    return () => {
+      isMounted = false;
+      socket.off('unit:deployed');
+      socket.off('unit:updated');
+    };
+  }, []);
 
   return (
     <div className="p-4 md:p-6 lg:p-xl w-full min-h-full flex flex-col gap-6">
@@ -46,7 +73,7 @@ export const RescueCoordination: React.FC = () => {
               <span className="material-symbols-outlined text-primary text-base">groups</span>
               Active Field Units ({units.length})
             </h3>
-            <span className="text-[11px] font-mono text-on-surface-variant font-semibold">4 DEPLOYED</span>
+            <span className="text-[11px] font-mono text-on-surface-variant font-semibold">{activeDeployed} DEPLOYED</span>
           </div>
 
           <div className="overflow-x-auto">

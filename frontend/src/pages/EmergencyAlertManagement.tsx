@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getAlerts, broadcastAlert } from '../api/disasterApi';
+import { getSocket } from '../api/socketClient';
 
 interface AlertItem {
   id: string;
@@ -10,45 +12,71 @@ interface AlertItem {
   body: string;
 }
 
-const mockAlerts: AlertItem[] = [
-  {
-    id: 'ALT-1092',
-    title: 'Flash Flood Warning - Evacuate Zone 4',
-    severity: 'Critical',
-    area: 'Lower Basin / Sectors 11-14',
-    time: '14:15 UTC',
-    reach: '12,450 / 15,000 Recipients',
-    body: 'Immediate evacuation order issued for all residents within 500m of Lower Basin Riverbank due to rapid water surge.',
-  },
-  {
-    id: 'ALT-1091',
-    title: 'Road Inundation Advisory',
-    severity: 'Warning',
-    area: 'Sector 4 Highway Overpass',
-    time: '13:40 UTC',
-    reach: '3,200 / 3,500 Recipients',
-    body: 'Highway 4 impassable due to 1.2m water level. Heavy vehicular traffic diverted to Northern Ridge Bypass.',
-  },
-  {
-    id: 'ALT-1090',
-    title: 'Water & Ration Supply Restored',
-    severity: 'Info',
-    area: 'Camp Alpha Primary Shelter',
-    time: '11:20 UTC',
-    reach: '800 / 800 Recipients',
-    body: 'Fresh potable drinking water and emergency ration distribution is now active at Sector 14 Shelter.',
-  },
-];
-
 export const EmergencyAlertManagement: React.FC = () => {
-  const [selectedAlert, setSelectedAlert] = useState<AlertItem>(mockAlerts[0]);
+  const [alerts, setAlerts] = useState<AlertItem[]>([]);
+  const [selectedAlert, setSelectedAlert] = useState<AlertItem | null>(null);
   const [activeFilter, setActiveFilter] = useState<'all' | 'critical' | 'warning'>('all');
   const [newTitle, setNewTitle] = useState('');
   const [newBody, setNewBody] = useState('');
   const [newSeverity, setNewSeverity] = useState('Critical (Red)');
   const [newArea, setNewArea] = useState('Lower Basin (All Sectors)');
+  const [sending, setSending] = useState(false);
 
-  const filteredAlerts = mockAlerts.filter((a) => {
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const res = await getAlerts(activeFilter);
+        if (isMounted && res.alerts) {
+          setAlerts(res.alerts);
+          if (!selectedAlert && res.alerts.length > 0) {
+            setSelectedAlert(res.alerts[0]);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load alerts:', err);
+      }
+    }
+    loadData();
+
+    // Listen to real-time broadcasts
+    const socket = getSocket();
+    socket.on('alert:new', (newAlert) => {
+      if (isMounted) {
+        setAlerts((prev) => [newAlert, ...prev]);
+        setSelectedAlert(newAlert);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      socket.off('alert:new');
+    };
+  }, [activeFilter]);
+
+  const handleBroadcast = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim() || !newBody.trim()) return;
+
+    setSending(true);
+    try {
+      const severity = newSeverity.includes('Critical') ? 'Critical' : newSeverity.includes('Warning') ? 'Warning' : 'Info';
+      await broadcastAlert({
+        title: newTitle,
+        severity,
+        area: newArea,
+        body: newBody,
+      });
+      setNewTitle('');
+      setNewBody('');
+    } catch (err) {
+      console.error('Failed to broadcast alert:', err);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const filteredAlerts = alerts.filter((a) => {
     if (activeFilter === 'critical') return a.severity === 'Critical';
     if (activeFilter === 'warning') return a.severity === 'Warning';
     return true;
@@ -64,7 +92,7 @@ export const EmergencyAlertManagement: React.FC = () => {
             <p className="text-xs text-on-surface-variant">Public Warning & Alert System</p>
           </div>
           <span className="px-2 py-0.5 bg-error-container text-error text-[11px] font-bold rounded">
-            {mockAlerts.length} Active
+            {alerts.length} Active
           </span>
         </div>
 
@@ -109,10 +137,10 @@ export const EmergencyAlertManagement: React.FC = () => {
               key={alert.id}
               onClick={() => setSelectedAlert(alert)}
               className={`p-4 cursor-pointer transition-colors relative ${
-                selectedAlert.id === alert.id ? 'bg-surface-container-low' : 'hover:bg-surface-container-low/50'
+                selectedAlert?.id === alert.id ? 'bg-surface-container-low' : 'hover:bg-surface-container-low/50'
               }`}
             >
-              {selectedAlert.id === alert.id && (
+              {selectedAlert?.id === alert.id && (
                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary" />
               )}
               <div className="flex justify-between items-start mb-1">
@@ -143,64 +171,66 @@ export const EmergencyAlertManagement: React.FC = () => {
       {/* Right Pane: Alert Details & Broadcast Dispatch */}
       <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 flex flex-col gap-6">
         {/* Selected Alert Breakdown Card */}
-        <section className="bg-surface border border-outline-variant rounded-xl p-5 shadow-xs">
-          <div className="flex flex-wrap justify-between items-start border-b border-outline-variant pb-3 gap-3">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span
-                  className={`px-2 py-0.5 text-xs font-bold rounded ${
-                    selectedAlert.severity === 'Critical'
-                      ? 'bg-error text-white'
-                      : selectedAlert.severity === 'Warning'
-                      ? 'bg-[#a33500] text-white'
-                      : 'bg-primary text-white'
-                  }`}
-                >
-                  {selectedAlert.severity.toUpperCase()}
-                </span>
-                <span className="font-mono text-xs text-on-surface-variant">{selectedAlert.id}</span>
+        {selectedAlert ? (
+          <section className="bg-surface border border-outline-variant rounded-xl p-5 shadow-xs">
+            <div className="flex flex-wrap justify-between items-start border-b border-outline-variant pb-3 gap-3">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span
+                    className={`px-2 py-0.5 text-xs font-bold rounded ${
+                      selectedAlert.severity === 'Critical'
+                        ? 'bg-error text-white'
+                        : selectedAlert.severity === 'Warning'
+                        ? 'bg-[#a33500] text-white'
+                        : 'bg-primary text-white'
+                    }`}
+                  >
+                    {selectedAlert.severity.toUpperCase()}
+                  </span>
+                  <span className="font-mono text-xs text-on-surface-variant">{selectedAlert.id}</span>
+                </div>
+                <h2 className="font-headline-md text-lg font-bold text-on-surface">{selectedAlert.title}</h2>
+                <p className="text-xs text-on-surface-variant mt-0.5">Target Area: {selectedAlert.area}</p>
               </div>
-              <h2 className="font-headline-md text-lg font-bold text-on-surface">{selectedAlert.title}</h2>
-              <p className="text-xs text-on-surface-variant mt-0.5">Target Area: {selectedAlert.area}</p>
-            </div>
 
-            <div className="text-right">
-              <span className="text-xs font-semibold text-on-surface-variant block">Audience Delivery</span>
-              <span className="font-mono text-base font-bold text-emerald-700">{selectedAlert.reach}</span>
-            </div>
-          </div>
-
-          <div className="mt-4 p-3 bg-surface-container-low rounded-lg border border-outline-variant">
-            <p className="text-xs font-mono text-on-surface whitespace-pre-wrap">{selectedAlert.body}</p>
-          </div>
-
-          {/* Delivery Channels */}
-          <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-            <div className="p-2.5 rounded-lg border border-outline-variant bg-surface-bright flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-base">sms</span>
-                <span className="font-semibold text-on-surface">SMS Broadcast</span>
+              <div className="text-right">
+                <span className="text-xs font-semibold text-on-surface-variant block">Audience Delivery</span>
+                <span className="font-mono text-base font-bold text-emerald-700">{selectedAlert.reach || 'Broadcasted'}</span>
               </div>
-              <span className="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
             </div>
 
-            <div className="p-2.5 rounded-lg border border-outline-variant bg-surface-bright flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-base">smartphone</span>
-                <span className="font-semibold text-on-surface">App Push</span>
-              </div>
-              <span className="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
+            <div className="mt-4 p-3 bg-surface-container-low rounded-lg border border-outline-variant">
+              <p className="text-xs font-mono text-on-surface whitespace-pre-wrap">{selectedAlert.body}</p>
             </div>
 
-            <div className="p-2.5 rounded-lg border border-outline-variant bg-surface-bright flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary text-base">radio</span>
-                <span className="font-semibold text-on-surface">Radio Frequency</span>
+            {/* Delivery Channels */}
+            <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div className="p-2.5 rounded-lg border border-outline-variant bg-surface-bright flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-base">sms</span>
+                  <span className="font-semibold text-on-surface">SMS Broadcast</span>
+                </div>
+                <span className="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
               </div>
-              <span className="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
+
+              <div className="p-2.5 rounded-lg border border-outline-variant bg-surface-bright flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-base">smartphone</span>
+                  <span className="font-semibold text-on-surface">App Push</span>
+                </div>
+                <span className="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
+              </div>
+
+              <div className="p-2.5 rounded-lg border border-outline-variant bg-surface-bright flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-base">radio</span>
+                  <span className="font-semibold text-on-surface">EAS Radio Alert</span>
+                </div>
+                <span className="material-symbols-outlined text-emerald-600 text-sm">check_circle</span>
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        ) : null}
 
         {/* Issue New Emergency Alert Form */}
         <section className="bg-surface border border-outline-variant rounded-xl p-5 shadow-xs">
@@ -291,10 +321,12 @@ export const EmergencyAlertManagement: React.FC = () => {
               </button>
               <button
                 type="button"
-                className="px-4 py-2 bg-error text-white font-bold rounded-lg hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-xs"
+                onClick={handleBroadcast}
+                disabled={sending}
+                className="px-5 py-2 bg-error text-white font-bold rounded-lg hover:bg-red-700 transition-colors shadow-sm flex items-center gap-1.5 disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-base">send</span>
-                Deploy Emergency Alert
+                <span className="material-symbols-outlined text-sm">cell_tower</span>
+                {sending ? 'Broadcasting Live...' : 'Broadcast Immediate Warning'}
               </button>
             </div>
           </form>

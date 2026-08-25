@@ -1,6 +1,40 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { getAssessmentReportCurrent } from '../api/disasterApi';
 
 export const FloodReport: React.FC = () => {
+  const [report, setReport] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const data = await getAssessmentReportCurrent();
+        if (isMounted) {
+          setReport(data);
+        }
+      } catch (err) {
+        console.error('Failed to load assessment report:', err);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, []);
+
+  const parameters = report?.parameters || [
+    { name: 'Area', value: 'Sector 12' },
+    { name: 'Water Coverage', value: '68%' },
+    { name: 'Water Spread', value: 'Increasing (South-East, +13%)' },
+    { name: 'Affected Settlements', value: '5 Settlements Inundated' },
+    { name: 'Victims Detected', value: '7' },
+    { name: 'Road Blockage', value: '2 Major Routes (Highway 4, Bridge Rd)' },
+    { name: 'Submerged Roads', value: '3 Intersections (>0.8m Depth)' },
+    { name: 'Road Accessibility', value: '62% Passable (12 Open)' },
+    { name: 'Infrastructure Impact', value: '4 Monitored Facilities' },
+    { name: 'Bridge Status', value: 'Risk Detected (Bridge B-02)' },
+    { name: 'Nearest Relief Camp', value: 'Camp A (2.4 km)' },
+    { name: 'Boats Available', value: '2 Active Units Ready for Dispatch' },
+  ];
+
   return (
     <div className="p-4 md:p-6 lg:p-xl max-w-5xl mx-auto w-full min-h-full flex flex-col gap-6">
       {/* Report Container */}
@@ -9,10 +43,10 @@ export const FloodReport: React.FC = () => {
         <div className="bg-surface-container py-4 px-6 border-b border-outline-variant flex flex-wrap items-center justify-between gap-4">
           <div>
             <h1 className="font-headline-lg text-xl md:text-2xl font-bold text-on-surface">
-              ASSESSMENT REPORT - Sector 12
+              ASSESSMENT REPORT - {report?.sector || 'Sector 12'}
             </h1>
             <p className="font-body-md text-xs md:text-sm text-on-surface-variant mt-1">
-              Generated: 2023-10-27 14:45 UTC · Source: Aerial Drone Telemetry &amp; GIS Mesh
+              Generated: {report?.generatedAt || '2023-10-27 14:45 UTC'} · Source: {report?.source || 'Aerial Drone Telemetry & GIS Mesh'}
             </p>
           </div>
 
@@ -42,77 +76,12 @@ export const FloodReport: React.FC = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/50 text-on-surface">
-                {/* 1. Area */}
-                <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4">Area</td>
-                  <td className="py-3.5 px-4">Sector 12</td>
-                </tr>
-
-                {/* 2. Water Coverage */}
-                <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4">Water Coverage</td>
-                  <td className="py-3.5 px-4">68%</td>
-                </tr>
-
-                {/* 3. Water Spread */}
-                <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4">Water Spread</td>
-                  <td className="py-3.5 px-4">Increasing (South-East, +13%)</td>
-                </tr>
-
-                {/* 4. Affected Settlements */}
-                <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4">Affected Settlements</td>
-                  <td className="py-3.5 px-4">5 Settlements Inundated</td>
-                </tr>
-
-                {/* 5. Victims Detected */}
-                <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4">Victims Detected</td>
-                  <td className="py-3.5 px-4">7</td>
-                </tr>
-
-                {/* 6. Road Blockage */}
-                <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4">Road Blockage</td>
-                  <td className="py-3.5 px-4">2 Major Routes (Highway 4, Bridge Rd)</td>
-                </tr>
-
-                {/* 7. Submerged Roads */}
-                <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4">Submerged Roads</td>
-                  <td className="py-3.5 px-4">3 Intersections (&gt;0.8m Depth)</td>
-                </tr>
-
-                {/* 8. Road Accessibility */}
-                <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4">Road Accessibility</td>
-                  <td className="py-3.5 px-4">62% Passable (12 Open)</td>
-                </tr>
-
-                {/* 9. Infrastructure Impact */}
-                <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4">Infrastructure Impact</td>
-                  <td className="py-3.5 px-4">4 Monitored Facilities</td>
-                </tr>
-
-                {/* 10. Bridge Status */}
-                <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4">Bridge Status</td>
-                  <td className="py-3.5 px-4">Risk Detected (Bridge B-02)</td>
-                </tr>
-
-                {/* 11. Nearest Relief Camp */}
-                <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4">Nearest Relief Camp</td>
-                  <td className="py-3.5 px-4">Camp A (2.4 km)</td>
-                </tr>
-
-                {/* 12. Boats Available */}
-                <tr className="hover:bg-surface-container-low/40 transition-colors">
-                  <td className="py-3.5 px-4">Boats Available</td>
-                  <td className="py-3.5 px-4">2 Active Units Ready for Dispatch</td>
-                </tr>
+                {parameters.map((param: any, idx: number) => (
+                  <tr key={idx} className="hover:bg-surface-container-low/40 transition-colors">
+                    <td className="py-3.5 px-4">{param.name}</td>
+                    <td className="py-3.5 px-4">{param.value}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

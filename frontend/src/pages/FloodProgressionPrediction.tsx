@@ -1,7 +1,37 @@
-import React from 'react';
-import { progressionTimeline, waterSpreadData } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { getFloodProgressionTimeline, getWaterCoverageSummary } from '../api/disasterApi';
+import type { ProgressionStep } from '../data/mockData';
 
 export const FloodProgressionPrediction: React.FC = () => {
+  const [timeline, setTimeline] = useState<ProgressionStep[]>([]);
+  const [summary, setSummary] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const [tl, sum] = await Promise.all([
+          getFloodProgressionTimeline(),
+          getWaterCoverageSummary(),
+        ]);
+        if (isMounted) {
+          setTimeline(tl);
+          setSummary(sum);
+        }
+      } catch (err) {
+        console.error('Failed to load progression data:', err);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, []);
+
+  const waterSpreadData = summary || {
+    coveragePercentage: 68,
+    trend: 'Increasing',
+    direction: 'South-East',
+    changeSincePreviousSurvey: '+13%',
+  };
   return (
     <div className="p-4 md:p-6 lg:p-xl w-full min-h-full flex flex-col gap-6">
       {/* Header & Actions */}
@@ -107,7 +137,7 @@ export const FloodProgressionPrediction: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-outline-variant/40 text-on-surface">
-                  {progressionTimeline.map((step, idx) => (
+                  {timeline.map((step, idx) => (
                     <tr key={idx} className={`hover:bg-surface-container-low/40 transition-colors ${idx === 2 ? 'bg-primary-container/5 font-semibold' : ''}`}>
                       <td className="py-2.5 px-3 font-mono">
                         {step.time} {idx === 2 && <span className="text-[10px] bg-primary text-white px-1.5 py-0.2 rounded font-sans ml-1">LATEST</span>}

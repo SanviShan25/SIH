@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { getIncidents } from '../api/disasterApi';
 
 interface IncidentRecord {
   id: string;
@@ -11,49 +12,27 @@ interface IncidentRecord {
   status: 'Resolved' | 'Under Action' | 'Archived';
 }
 
-const recordsData: IncidentRecord[] = [
-  {
-    id: 'INC-2023-1027-01',
-    date: '2023-10-27 14:45 UTC',
-    sector: 'Sector 12 (North Riverbank)',
-    type: 'Flash Flood & Breach',
-    severity: 'Critical',
-    victims: 7,
-    status: 'Under Action',
-  },
-  {
-    id: 'INC-2023-1027-02',
-    date: '2023-10-27 12:15 UTC',
-    sector: 'Highway 4 Overpass',
-    type: 'Submerged Arterial Road',
-    severity: 'Warning',
-    victims: 0,
-    status: 'Under Action',
-  },
-  {
-    id: 'INC-2023-1026-08',
-    date: '2023-10-26 19:30 UTC',
-    sector: 'Sector 14 Residential Block',
-    type: 'Power Grid Failure & Flooding',
-    severity: 'Warning',
-    victims: 12,
-    status: 'Resolved',
-  },
-  {
-    id: 'INC-2023-1026-05',
-    date: '2023-10-26 10:00 UTC',
-    sector: 'East River Dam Approach',
-    type: 'Levee Seepage Risk',
-    severity: 'Moderate',
-    victims: 0,
-    status: 'Archived',
-  },
-];
-
 export const IncidentRecords: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [records, setRecords] = useState<IncidentRecord[]>([]);
 
-  const filtered = recordsData.filter(
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const res = await getIncidents(searchTerm);
+        if (isMounted) {
+          setRecords(res.incidents);
+        }
+      } catch (err) {
+        console.error('Failed to load incidents:', err);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, [searchTerm]);
+
+  const filtered = records.filter(
     (r) =>
       r.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       r.sector.toLowerCase().includes(searchTerm.toLowerCase()) ||

@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getReliefCamps } from '../api/disasterApi';
+import { getSocket } from '../api/socketClient';
 
 interface Camp {
   id: string;
@@ -15,56 +17,50 @@ interface Camp {
   personnel: number;
 }
 
-const campsData: Camp[] = [
-  {
-    id: 'camp-1',
-    name: 'Sector 14 Shelter',
-    location: 'North District School',
-    status: 'Critical',
-    occupancy: 950,
-    capacity: 1000,
-    foodDays: '1 Day',
-    foodCritical: true,
-    waterDays: '2 Days',
-    waterCritical: true,
-    medsStatus: 'Low',
-    personnel: 24,
-  },
-  {
-    id: 'camp-2',
-    name: 'Riverside High School',
-    location: 'West Bank Zone',
-    status: 'Warning',
-    occupancy: 410,
-    capacity: 500,
-    foodDays: '5 Days',
-    waterDays: '4 Days',
-    medsStatus: 'Ok',
-    personnel: 12,
-  },
-  {
-    id: 'camp-3',
-    name: 'Camp Bravo',
-    location: 'South Hills Stadium',
-    status: 'Stable',
-    occupancy: 450,
-    capacity: 1000,
-    foodDays: '10+ Days',
-    waterDays: '10+ Days',
-    medsStatus: 'Ok',
-    personnel: 30,
-  },
-];
-
 export const ReliefCampsOversight: React.FC = () => {
   const [filter, setFilter] = useState('all');
+  const [search, setSearch] = useState('');
+  const [camps, setCamps] = useState<Camp[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
 
-  const filteredCamps = campsData.filter((camp) => {
-    if (filter === 'critical') return camp.status === 'Critical';
-    if (filter === 'warning') return camp.status === 'Warning';
-    if (filter === 'stable') return camp.status === 'Stable';
-    return true;
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const res = await getReliefCamps(search, filter);
+        if (isMounted) {
+          setCamps(res.camps);
+          setMetrics(res.metrics);
+        }
+      } catch (err) {
+        console.error('Failed to load relief camps:', err);
+      }
+    }
+    loadData();
+
+    const socket = getSocket();
+    socket.on('camp:status-change', (updatedCamp) => {
+      if (isMounted) {
+        setCamps((prev) => prev.map((c) => (c.id === updatedCamp.id ? updatedCamp : c)));
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      socket.off('camp:status-change');
+    };
+  }, [filter, search]);
+
+  const filteredCamps = camps.filter((c) => {
+    const matchesFilter = filter === 'all' || c.status.toLowerCase() === filter.toLowerCase();
+    const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase()) || c.location.toLowerCase().includes(search.toLowerCase());
+    return matchesFilter && matchesSearch;
   });
+
+  const totalOccupancy = metrics?.totalOccupancy || camps.reduce((acc, c) => acc + c.occupancy, 0);
+  const totalCapacity = metrics?.totalCapacity || camps.reduce((acc, c) => acc + c.capacity, 0);
+  const capacityPct = metrics?.capacityUtilizationPct || Math.round((totalOccupancy / (totalCapacity || 1)) * 100);
+  const criticalCamps = metrics?.criticalCampsCount || camps.filter((c) => c.status === 'Critical' || c.foodCritical || c.waterCritical).length;
 
   return (
     <div className="p-4 md:p-6 lg:p-xl w-full min-h-full flex flex-col gap-6">
@@ -75,11 +71,19 @@ export const ReliefCampsOversight: React.FC = () => {
             Relief Camps Oversight
           </h1>
           <p className="font-body-md text-sm md:text-body-md text-on-surface-variant mt-1">
-            Manage shelters, monitor occupancy & rations capacity, and coordinate dispatch logistics.
+            Real-time shelter capacity ({capacityPct}% Avg Utilized), {criticalCamps} critical camps requiring rations.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search camp..."
+            className="bg-surface border border-outline-variant rounded-lg px-3 py-2 text-xs text-on-surface focus:border-primary focus:outline-none"
+          />
+
           <div className="relative min-w-[200px]">
             <select
               value={filter}

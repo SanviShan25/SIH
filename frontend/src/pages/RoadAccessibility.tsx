@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { roadAccessibilityData } from '../data/mockData';
+import React, { useState, useEffect } from 'react';
+import { getRoads } from '../api/disasterApi';
 
 interface RouteDetail {
   id: string;
@@ -13,113 +13,30 @@ interface RouteDetail {
   lastSurvey: string;
 }
 
-const mockRoutesList: RouteDetail[] = [
-  {
-    id: 'R-01',
-    name: 'Highway 4 Overpass',
-    category: 'Arterial Highway',
-    status: 'Blocked',
-    waterDepth: '1.2m',
-    clearance: 'Impassable',
-    condition: 'Heavy debris accumulation & 1.2m standing water surge',
-    alternativeRoute: 'Northern Ridge Bypass Corridor',
-    lastSurvey: '14:25 UTC',
-  },
-  {
-    id: 'R-02',
-    name: 'Bridge Road Crossing',
-    category: 'Bridge Crossing',
-    status: 'Blocked',
-    waterDepth: '1.5m',
-    clearance: 'Impassable',
-    condition: 'Structural safety cordon active due to high river shear flow',
-    alternativeRoute: 'East Levee Causeway',
-    lastSurvey: '14:20 UTC',
-  },
-  {
-    id: 'R-03',
-    name: 'Main Street & Sector 12 Junction',
-    category: 'Secondary Road',
-    status: 'Submerged',
-    waterDepth: '0.85m',
-    clearance: 'Impassable',
-    condition: 'Water depth exceeding safe vehicular limit',
-    alternativeRoute: 'Market Link Bypass',
-    lastSurvey: '14:15 UTC',
-  },
-  {
-    id: 'R-04',
-    name: 'River Access Way',
-    category: 'Local Street',
-    status: 'Submerged',
-    waterDepth: '1.1m',
-    clearance: 'Impassable',
-    condition: 'Direct overflow from levee embankment breach',
-    alternativeRoute: 'None (Boat extraction active)',
-    lastSurvey: '14:10 UTC',
-  },
-  {
-    id: 'R-05',
-    name: 'East Dam Approach Way',
-    category: 'Secondary Road',
-    status: 'Submerged',
-    waterDepth: '0.6m',
-    clearance: 'Emergency Vehicles Only',
-    condition: 'Minor seepage with moving surface runoff',
-    alternativeRoute: 'East Ridge Road',
-    lastSurvey: '14:05 UTC',
-  },
-  {
-    id: 'R-06',
-    name: 'Sector 14 Arterial Corridor',
-    category: 'Arterial Highway',
-    status: 'Partially Affected',
-    waterDepth: '0.3m',
-    clearance: 'High Clearance (>4x4)',
-    condition: 'Single lane open with police escort; shoulder inundated',
-    alternativeRoute: 'Direct arterial transit',
-    lastSurvey: '13:55 UTC',
-  },
-  {
-    id: 'R-07',
-    name: 'West Lowlands Link Road',
-    category: 'Secondary Road',
-    status: 'Partially Affected',
-    waterDepth: '0.25m',
-    clearance: 'High Clearance (>4x4)',
-    condition: 'Intermittent water logging on southern curves',
-    alternativeRoute: 'Upper Hill Road',
-    lastSurvey: '13:45 UTC',
-  },
-  {
-    id: 'R-08',
-    name: 'North Ring Corridor',
-    category: 'Evacuation Corridor',
-    status: 'Open',
-    waterDepth: '0.0m',
-    clearance: 'All Vehicles',
-    condition: 'Fully dry & clear; designated Primary Safe Evacuation Route',
-    alternativeRoute: 'Primary corridor',
-    lastSurvey: '14:30 UTC',
-  },
-  {
-    id: 'R-09',
-    name: 'Camp Bravo Transit Route',
-    category: 'Evacuation Corridor',
-    status: 'Open',
-    waterDepth: '0.0m',
-    clearance: 'All Vehicles',
-    condition: 'Open for ambulance and heavy relief convoy transit',
-    alternativeRoute: 'Primary corridor',
-    lastSurvey: '14:30 UTC',
-  },
-];
-
 export const RoadAccessibility: React.FC = () => {
   const [filter, setFilter] = useState<'All' | 'Open' | 'Partially Affected' | 'Submerged' | 'Blocked'>('All');
   const [search, setSearch] = useState('');
+  const [routes, setRoutes] = useState<RouteDetail[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
 
-  const filteredRoutes = mockRoutesList.filter((r) => {
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const res = await getRoads(filter, search);
+        if (isMounted) {
+          setRoutes(res.routes);
+          setMetrics(res.metrics);
+        }
+      } catch (err) {
+        console.error('Failed to load roads:', err);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, [filter, search]);
+
+  const filteredRoutes = routes.filter((r) => {
     const matchesFilter = filter === 'All' || r.status === filter;
     const matchesSearch =
       r.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -127,6 +44,14 @@ export const RoadAccessibility: React.FC = () => {
       r.category.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
+
+  const roadAccessibilityData = metrics || {
+    overallPercentage: 62,
+    openRoads: 12,
+    partiallyAffected: 4,
+    submergedRoads: 3,
+    blockedRoads: 2,
+  };
 
   return (
     <div className="p-4 md:p-6 lg:p-xl w-full min-h-full flex flex-col gap-6">

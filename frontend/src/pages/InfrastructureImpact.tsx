@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { getInfrastructure } from '../api/disasterApi';
 
 interface FacilityDetail {
   id: string;
@@ -14,79 +15,30 @@ interface FacilityDetail {
   lastInspection: string;
 }
 
-const mockFacilitiesList: FacilityDetail[] = [
-  {
-    id: 'B-02',
-    name: 'Bridge B-02 River Crossing',
-    type: 'Bridge',
-    location: 'Sector 12 River Crossing',
-    status: 'Risk Detected',
-    structuralIntegrity: 'Critical (60%)',
-    waterLevel: '1.8m (Pier Submerged)',
-    backupPower: 'Solar Active',
-    detail: 'Structural Risk Detected · Flow Shear 12,000 m³/s impacting central pier foundation',
-    actionTaken: 'Vehicular traffic cordoned; drone structural sensor active',
-    lastInspection: '14:25 UTC',
-  },
-  {
-    id: 'H-01',
-    name: 'Hospital H-01 Regional Center',
-    type: 'Hospital',
-    location: 'Sector 12 East Medical Corridor',
-    status: 'Accessible',
-    structuralIntegrity: 'Nominal (100%)',
-    waterLevel: '0.0m (Dry perimeter)',
-    backupPower: 'Grid Online',
-    detail: 'Fully Accessible · 120 Bed Trauma Care & ICU completely operational',
-    actionTaken: 'Designated primary casualty intake facility',
-    lastInspection: '14:30 UTC',
-  },
-  {
-    id: 'G-03',
-    name: 'Government Building G-03',
-    type: 'Government Building',
-    location: 'Civic Administrative Center',
-    status: 'Flood Affected',
-    structuralIntegrity: 'Monitored (85%)',
-    waterLevel: '0.4m Ingress',
-    backupPower: 'Generator 100%',
-    detail: 'Ground Floor Water Ingress (0.4m); records moved to upper floors',
-    actionTaken: 'Temporary field ops shifted to Sector 14 HQ',
-    lastInspection: '14:15 UTC',
-  },
-  {
-    id: 'PS-01',
-    name: 'Substation Sub-04 Grid',
-    type: 'Power Station',
-    location: 'Sector 14 Grid Corridor',
-    status: 'Risk Detected',
-    structuralIntegrity: 'Monitored (85%)',
-    waterLevel: '0.5m Perimeter',
-    backupPower: 'Battery Offline',
-    detail: 'Telemetry offline · Flood barrier sandbags deployed around transformer bays',
-    actionTaken: 'Power diverted via Sector 10 redundancy feeder',
-    lastInspection: '14:00 UTC',
-  },
-  {
-    id: 'WT-02',
-    name: 'Sector 12 Water Treatment Plant',
-    type: 'Water Utility',
-    location: 'West Intake Canal',
-    status: 'Flood Affected',
-    structuralIntegrity: 'Monitored (85%)',
-    waterLevel: '0.7m Ingress',
-    backupPower: 'Generator 100%',
-    detail: 'Main intake filters isolated to avoid flood silt contamination',
-    actionTaken: 'Emergency chlorination tanks online for relief camps',
-    lastInspection: '13:50 UTC',
-  },
-];
-
 export const InfrastructureImpact: React.FC = () => {
   const [filter, setFilter] = useState<'All' | 'Accessible' | 'Risk Detected' | 'Flood Affected'>('All');
   const [search, setSearch] = useState('');
+  const [facilities, setFacilities] = useState<FacilityDetail[]>([]);
+  const [metrics, setMetrics] = useState<any>(null);
 
-  const filteredFacilities = mockFacilitiesList.filter((f) => {
+  useEffect(() => {
+    let isMounted = true;
+    async function loadData() {
+      try {
+        const res = await getInfrastructure(filter, search);
+        if (isMounted) {
+          setFacilities(res.facilities);
+          setMetrics(res.metrics);
+        }
+      } catch (err) {
+        console.error('Failed to load infrastructure:', err);
+      }
+    }
+    loadData();
+    return () => { isMounted = false; };
+  }, [filter, search]);
+
+  const filteredFacilities = facilities.filter((f) => {
     const matchesFilter = filter === 'All' || f.status === filter;
     const matchesSearch =
       f.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -131,7 +83,7 @@ export const InfrastructureImpact: React.FC = () => {
             <span className="material-symbols-outlined text-primary">domain</span>
           </div>
           <div className="text-2xl font-bold text-on-surface">
-            {mockFacilitiesList.length} Assets
+            {metrics?.totalTracked || facilities.length} Assets
           </div>
           <p className="text-[11px] text-on-surface-variant mt-1 font-medium">
             Across Sector 12 &amp; 14
