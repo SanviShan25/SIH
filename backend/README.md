@@ -1,7 +1,7 @@
 # Sky Guardians — Drone Flood Disaster Intelligence & Operations Backend
 
 > **Disaster Response & Aerial Telemetry Command API**  
-> Built with **Node.js, Express, TypeScript, Prisma ORM, and Socket.IO**.
+> Built with **Node.js, Express, and TypeScript**.
 
 ---
 
@@ -17,9 +17,8 @@ npm install
 cp .env.example .env
 ```
 
-### 3. Initialize & Seed Database
+### 3. Reset Local Assessment Store (Optional)
 ```bash
-npm run prisma:push
 npm run seed
 ```
 
@@ -107,19 +106,6 @@ npm run dev
 
 ---
 
-## ⚡ Real-Time WebSocket Events (Socket.IO)
-
-Clients connect to `ws://your-backend-url` and receive:
-
-| Event | Direction | Payload |
-|---|---|---|
-| `telemetry:update` | Server $\rightarrow$ Client | Live drone GPS, altitude, battery, speed (broadcast every 2s) |
-| `alert:new` | Server $\rightarrow$ Client | Newly broadcasted emergency alert |
-| `camp:status-change` | Server $\rightarrow$ Client | Relief camp flipped to Critical inventory |
-| `flood:snapshot-update` | Server $\rightarrow$ Client | Updated hydrological survey readings |
-| `unit:deployed` | Server $\rightarrow$ Client | Newly deployed field rescue unit |
-| `incident:created` | Server $\rightarrow$ Client | Real-time incident alert |
-
 ---
 
 ## ☁️ Step-by-Step Cloud Deployment Guide
@@ -138,5 +124,5 @@ Clients connect to `ws://your-backend-url` and receive:
 ### Option B: Deploy to Render
 1. Visit **[render.com](https://render.com)** $\rightarrow$ **New Web Service**.
 2. Connect `Shashankpr17/drone_backend`.
-3. Set **Build Command**: `npm install && npm run build && npm run prisma:push && npm run seed`
+3. Set **Build Command**: `npm install && npm run build`
 4. Set **Start Command**: `npm start`

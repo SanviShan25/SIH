@@ -29,18 +29,19 @@ backend/                  Node.js API and inference orchestrator
   src/app.ts              Express application and static uploads
   src/routes/analysis.routes.ts
                           Upload, inference, assessment, and report routes
-  ml/inference.py         YOLO image/video inference worker
-  weights/                YOLO model weights
   data/assessment-store.json
                           Local assessment data store
-html files/               Reference dashboard screens
+ml/                       Python inference worker and model weights
+  inference.py            YOLO image/video inference worker
+  requirements.txt        Python inference dependencies
+  yolov11_flood.pt        YOLO model weights
 ```
 
 ## Requirements
 
 - Node.js 18 or newer
 - Python 3.11 or newer
-- A local YOLO model at `backend/weights/yolov11_flood.pt`
+- A local YOLO model at `ml/yolov11_flood.pt`
 - `ffprobe` is optional and is used to read video GPS metadata
 
 ## Run Locally
@@ -52,7 +53,7 @@ cd backend
 npm install
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -r ../ml/requirements.txt
 npm run dev
 ```
 
@@ -80,14 +81,15 @@ npx vite --host 0.0.0.0
 
 Open `http://localhost:5173/`.
 
-The frontend calls the local backend at `http://localhost:8000/api/v1`. Update `frontend/app.js` if the backend is hosted elsewhere.
+The frontend calls the local backend at `http://localhost:8000/api/v1`; update
+the `API` constant in `frontend/app.js` if the backend is hosted elsewhere.
 
 ## Upload and Inference Flow
 
 1. The officer selects an image or video in the dashboard.
 2. The browser shows an immediate local preview.
 3. `POST /api/v1/analysis/upload` stores the file with Multer.
-4. The backend starts `backend/ml/inference.py` with the uploaded path and model path.
+4. The backend starts `ml/inference.py` with the uploaded path and model path.
 5. YOLO returns detections as JSON and writes an annotated image.
 6. The backend stores the assessment snapshot.
 7. The dashboard reloads the latest assessment and updates the cards, map, and evidence gallery.
