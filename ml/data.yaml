@@ -1,0 +1,7 @@
+path: ml
+train: dataset/images/train
+val: dataset/images/val
+
+names:
+  0: stranded_person
+  1: group_of_people

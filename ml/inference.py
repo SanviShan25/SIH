@@ -9,15 +9,20 @@ from ultralytics import YOLO
 def main():
     image_path, output_dir, model_path = sys.argv[1:4]
     model = YOLO(model_path)
+    confidence = float(os.getenv("YOLO_CONF", "0.80"))
+    image_size = int(os.getenv("YOLO_IMGSZ", "1280"))
+    iou = float(os.getenv("YOLO_IOU", "0.5"))
+    augment = os.getenv("YOLO_AUGMENT", "1").lower() in {"1", "true", "yes"}
     is_video = os.path.splitext(image_path)[1].lower() in {".mp4", ".mov", ".avi", ".webm", ".mkv"}
     frames = []
     if is_video:
         capture = cv2.VideoCapture(image_path)
         frame_count = int(capture.get(cv2.CAP_PROP_FRAME_COUNT))
         fps = capture.get(cv2.CAP_PROP_FPS) or 1.0
-        step = max(1, int(fps))
+        target_frames = 60
+        step = max(1, int(frame_count / target_frames)) if frame_count > 0 else max(1, int(fps))
         frame_index = 0
-        while len(frames) < 30:
+        while len(frames) < target_frames:
             ok, frame = capture.read()
             if not ok:
                 break
@@ -35,7 +40,7 @@ def main():
     best_plot = None
     best_count = -1
     for frame_index, frame in frames:
-        result = model.predict(source=frame, save=False, verbose=False)[0]
+        result = model.predict(source=frame, conf=confidence, imgsz=image_size, iou=iou, augment=augment, save=False, verbose=False)[0]
         frame_detections = []
         for box in result.boxes:
             coords = box.xyxy[0].tolist()
@@ -52,7 +57,23 @@ def main():
     annotated = os.path.join(annotated_dir, annotated_name)
     if best_plot is not None:
         cv2.imwrite(annotated, best_plot)
-    print(json.dumps({"detections": detections, "annotatedImage": annotated, "framesProcessed": len(frames), "mediaType": "VIDEO" if is_video else "IMAGE"}))
+    model_classes = list(model.names.values())
+    class_text = " ".join(model_classes).lower()
+    capabilities = {
+        "peopleDetection": any(term in class_text for term in ("person", "people")),
+        "floodMapping": any(term in class_text for term in ("flood", "water", "inundat")),
+        "settlementIdentification": any(term in class_text for term in ("building", "settlement", "house")),
+        "roadAccessibility": any(term in class_text for term in ("road", "bridge", "blocked", "vehicle")),
+    }
+    print(json.dumps({
+        "detections": detections,
+        "annotatedImage": annotated,
+        "framesProcessed": len(frames),
+        "mediaType": "VIDEO" if is_video else "IMAGE",
+        "modelClasses": model_classes,
+        "capabilities": capabilities,
+        "inference": {"confidence": confidence, "imageSize": image_size, "iou": iou, "augment": augment},
+    }))
 
 
 if __name__ == "__main__":

@@ -21,8 +21,15 @@ const upload = multer({
 });
 
 type Detection = { class: string; confidence: number; bbox: number[] };
-type InferenceResult = { detections: Detection[]; annotatedImage?: string; floodMaskImage?: string; framesProcessed?: number; mediaType?: 'IMAGE' | 'VIDEO' };
+type InferenceResult = { detections: Detection[]; annotatedImage?: string; floodMaskImage?: string; framesProcessed?: number; mediaType?: 'IMAGE' | 'VIDEO'; modelClasses?: string[]; capabilities?: Record<string, boolean>; inference?: { confidence: number; imageSize: number; iou: number; augment: boolean } };
 type Coordinates = { latitude: number; longitude: number } | null;
+
+const requestedCapabilities = {
+  droneAssessment: 'available',
+  floodMapping: 'requires flood or water classes',
+  affectedSettlements: 'requires settlement or building classes and geospatial data',
+  roadAccessibility: 'requires road, bridge, and blockage classes or GIS analysis',
+} as const;
 
 function errorResponse(res: Response, error: unknown, status = 500) {
   return res.status(status).json({ success: false, error: error instanceof Error ? error.message : 'Request failed' });
@@ -84,6 +91,13 @@ function floodMetrics(detections: Detection[]) {
   return { coveragePercentage, severity, direction, floodDetections: flood };
 }
 
+function confidenceSummary(detections: Detection[]) {
+  const values = detections.map((detection) => detection.confidence).filter(Number.isFinite);
+  if (!values.length) return { score: 0, mean: 0, minimum: 0, maximum: 0, detections: 0 };
+  const mean = values.reduce((total, value) => total + value, 0) / values.length;
+  return { score: Number((mean * 100).toFixed(1)), mean: Number(mean.toFixed(4)), minimum: Number(Math.min(...values).toFixed(4)), maximum: Number(Math.max(...values).toFixed(4)), detections: values.length };
+}
+
 function assetUrl(filePath?: string | null) {
   return filePath ? `/uploads/${path.relative(uploadDir, filePath).split(path.sep).join('/')}` : '';
 }
@@ -132,8 +146,21 @@ router.post('/analysis/upload', upload.single('image'), async (req, res) => {
     const snapshot = await store.floodSnapshot.create({ data: { imagePath: req.file.path, mediaType: result.mediaType || (mediaType === 'video/' ? 'VIDEO' : 'IMAGE'), framesProcessed: result.framesProcessed || 1, latitude: coordinates?.latitude ?? null, longitude: coordinates?.longitude ?? null, annotatedImagePath: result.annotatedImage, floodMaskImagePath: result.floodMaskImage, coveragePercentage: metrics.coveragePercentage, severity: metrics.severity, floodAreaSqKm: 0, spreadTrend: previous ? (metrics.coveragePercentage > previous.coveragePercentage ? 'INCREASING' : metrics.coveragePercentage < previous.coveragePercentage ? 'DECREASING' : 'STABLE') : 'UNKNOWN', direction: metrics.direction, detectionsJson: JSON.stringify(result.detections) } });
     const [settlements, blockedRoads, hospitals] = await Promise.all([affectedSettlements(result.detections), store.roadRoute.count({ where: { status: 'BLOCKED' } }), store.infrastructureAsset.count({ where: { type: 'HOSPITAL', status: { in: ['AT RISK', 'DAMAGED'] } } })]);
     const plan = await createResponsePlan(snapshot.id, metrics.coveragePercentage, metrics.severity, settlements.length, blockedRoads, hospitals);
-    return res.status(201).json({ success: true, data: { snapshotId: snapshot.id, responsePlanId: plan.id, mediaType: snapshot.mediaType, framesProcessed: snapshot.framesProcessed, latitude: snapshot.latitude, longitude: snapshot.longitude, coveragePercentage: metrics.coveragePercentage, severity: metrics.severity, direction: metrics.direction, trend: snapshot.spreadTrend, annotatedImage: assetUrl(result.annotatedImage), floodMaskImage: assetUrl(result.floodMaskImage), detections: result.detections } });
+    return res.status(201).json({ success: true, data: { snapshotId: snapshot.id, responsePlanId: plan.id, mediaType: snapshot.mediaType, framesProcessed: snapshot.framesProcessed, latitude: snapshot.latitude, longitude: snapshot.longitude, coveragePercentage: metrics.coveragePercentage, severity: metrics.severity, direction: metrics.direction, trend: snapshot.spreadTrend, annotatedImage: assetUrl(result.annotatedImage), floodMaskImage: assetUrl(result.floodMaskImage), detections: result.detections, confidence: confidenceSummary(result.detections), modelClasses: result.modelClasses || [], inference: result.inference, capabilities: result.capabilities || requestedCapabilities } });
   } catch (error) { await unlink(req.file.path).catch(() => undefined); return errorResponse(res, error, 422); }
+});
+
+router.post('/analysis/live', upload.single('frame'), async (req, res) => {
+  if (!req.file) return errorResponse(res, 'A live video frame is required', 400);
+  try {
+    const result = await runInference(req.file.path);
+    const detections = result.detections || [];
+    return res.json({ success: true, data: { mediaType: 'LIVE', detections, confidence: confidenceSummary(detections), modelClasses: result.modelClasses || [], capabilities: result.capabilities || requestedCapabilities, annotatedImage: assetUrl(result.annotatedImage), inference: result.inference } });
+  } catch (error) {
+    return errorResponse(res, error, 422);
+  } finally {
+    await unlink(req.file.path).catch(() => undefined);
+  }
 });
 
 router.get('/analysis/latest', async (_req, res) => { const snapshot = await latestSnapshot(); if (!snapshot) return errorResponse(res, 'No image assessment has been completed', 404); return res.json({ success: true, data: snapshot }); });
