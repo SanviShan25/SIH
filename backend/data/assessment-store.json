@@ -207,6 +207,22 @@
       "detectionsJson": "[{\"class\":\"stranded_person\",\"confidence\":0.34109073877334595,\"bbox\":[0.04317252022879464,0.45393952869233634,0.03657270703996931,0.03502665201822917],\"frameIndex\":0},{\"class\":\"stranded_person\",\"confidence\":0.30487731099128723,\"bbox\":[0.20236177716936385,0.19973926362537203,0.01669921875,0.034527340843563986],\"frameIndex\":0},{\"class\":\"stranded_person\",\"confidence\":0.27926915884017944,\"bbox\":[0.18219725472586495,0.17488013857886905,0.01645312717982701,0.031189444405691963],\"frameIndex\":0}]",
       "id": "badf10c3-a092-41cf-ac2f-7bd017b8e9bc",
       "recordedAt": "2026-08-27T10:27:34.335Z"
+    },
+    {
+      "imagePath": "/Users/sanvishan/Desktop/SIH/backend/data/uploads/db0ff390-67d1-4a53-a0e3-1e779348831c.png",
+      "mediaType": "IMAGE",
+      "framesProcessed": 1,
+      "latitude": null,
+      "longitude": null,
+      "annotatedImagePath": "/Users/sanvishan/Desktop/SIH/backend/data/uploads/annotated/db0ff390-67d1-4a53-a0e3-1e779348831c.jpg",
+      "coveragePercentage": 0,
+      "severity": "LOW",
+      "floodAreaSqKm": 0,
+      "spreadTrend": "STABLE",
+      "direction": "UNKNOWN",
+      "detectionsJson": "[]",
+      "id": "5d175daf-82b9-4d91-bad1-376c619b92fa",
+      "recordedAt": "2026-08-27T11:01:17.173Z"
     }
   ],
   "settlements": [],
@@ -316,6 +332,14 @@
       "resourcesJson": "{\"rescueTeams\":1,\"boats\":1,\"medicalKits\":0,\"foodPackets\":0}",
       "id": "01f66a3f-fefd-4d83-8b54-fb93fc89b9d7",
       "createdAt": "2026-08-27T10:27:34.336Z"
+    },
+    {
+      "snapshotId": "5d175daf-82b9-4d91-bad1-376c619b92fa",
+      "priority": "LOW",
+      "actionsJson": "[]",
+      "resourcesJson": "{\"rescueTeams\":1,\"boats\":1,\"medicalKits\":0,\"foodPackets\":0}",
+      "id": "849e4422-c607-4274-9180-1773df6b1490",
+      "createdAt": "2026-08-27T11:01:17.175Z"
     }
   ],
   "assessmentReports": [
