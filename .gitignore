@@ -36,3 +36,12 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
+
+# Runtime output and local ML artifacts
+backend/__pycache__/
+**/__pycache__/
+backend/data/uploads/
+backend/data/osm_cache/
+runs/
+ml/dataset/
+ml/runs/

@@ -1,254 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Logo } from '../components/Logo';
-import { getDashboardSummary } from '../api/disasterApi';
-import type { DashboardSummaryResponse } from '../api/disasterApi';
-import { getSocket } from '../api/socketClient';
-import { DisasterGoogleMap } from '../components/DisasterGoogleMap';
+import React, { useEffect, useState } from 'react';
+import { AlertTriangle, Building2, Download, FileSpreadsheet, Home, Map, MapPin, Radio, Route, Upload, Users, Waves } from 'lucide-react';
+import { MapContainer, Marker, Popup, TileLayer, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import { assetUrl, downloadReport, getFloodAssessment, getInfrastructureAssessment, getLatestAssessment, getResponsePlan, getRoadAssessment, getSettlementAssessment, uploadDroneSurvey } from '../api/assessmentApi';
+import type { FloodAssessment, InfrastructureAssessment, LatestAssessment, ResponsePlan, RoadAssessment, SettlementAssessment } from '../api/assessmentApi';
+
+type DashboardData = { flood: FloodAssessment; settlements: SettlementAssessment; roads: RoadAssessment; infrastructure: InfrastructureAssessment; response: ResponsePlan; latest: LatestAssessment };
+const defaultCenter: [number, number] = [20.9517, 85.0985];
+
+function MapCenter({ coordinates }: { coordinates: [number, number] }) { const map = useMap(); useEffect(() => { map.setView(coordinates, 10); }, [coordinates, map]); return null; }
+function Panel({ title, action, children, className = '' }: { title: string; action?: string; children: React.ReactNode; className?: string }) { return <section className={`rounded-lg border border-slate-200 bg-white ${className}`}><div className="flex items-center justify-between border-b border-slate-100 px-4 py-3"><h2 className="text-sm font-bold text-slate-800">{title}</h2>{action && <button className="rounded border border-slate-200 px-2.5 py-1 text-[10px] font-bold text-slate-600 hover:border-blue-300 hover:text-blue-700">{action}</button>}</div><div className="p-3">{children}</div></section>; }
+function StatCard({ icon: Icon, label, value, note, color }: { icon: React.ElementType; label: string; value: string; note: string; color: string }) { return <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-[0_2px_8px_rgba(15,23,42,0.03)]"><div className="flex items-start justify-between"><div><p className="text-[10px] font-bold text-slate-500">{label}</p><p className="mt-2 text-2xl font-extrabold tracking-tight text-slate-900">{value}</p></div><span className={`rounded-lg p-2 ${color}`}><Icon size={21} /></span></div><p className="mt-2 text-[10px] font-medium text-slate-500">{note}</p></div>; }
 
 export const OperationalDashboard: React.FC = () => {
-  const [data, setData] = useState<DashboardSummaryResponse | null>(null);
-  const [liveTelemetry, setLiveTelemetry] = useState<any>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadData() {
-      try {
-        const summary = await getDashboardSummary();
-        if (isMounted) {
-          setData(summary);
-        }
-      } catch (err) {
-        console.error('Failed to load dashboard summary:', err);
-      }
-    }
-
-    loadData();
-
-    // Subscribe to live telemetry and alerts
-    const socket = getSocket();
-    socket.on('telemetry:update', (telemetry) => {
-      if (isMounted) setLiveTelemetry(telemetry);
-    });
-
-    socket.on('alert:new', (newAlert) => {
-      if (isMounted) {
-        setData((prev) => {
-          if (!prev) return prev;
-          return {
-            ...prev,
-            recentAlerts: [newAlert, ...prev.recentAlerts.slice(0, 2)],
-          };
-        });
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      socket.off('telemetry:update');
-      socket.off('alert:new');
-    };
-  }, []);
-
-  const waterSpread = data?.waterSpread || {
-    coveragePercentage: 68,
-    trend: 'Increasing',
-    direction: 'South-East',
-    changeSincePreviousSurvey: '+13%',
-  };
-
-  const settlements = data?.settlements || { totalCount: 5, inundatedCount: 5 };
-  const roadAccessibility = data?.roadAccessibility || { overallPercentage: 62, openRoads: 12, blockedRoads: 2, submergedRoads: 3 };
-  const infrastructureImpact = data?.infrastructureImpact || { totalTracked: 4, atRisk: 1, flooded: 1, accessible: 2 };
-  const dronesAvailable = data?.dronesAvailable || { active: 1, standby: 1, total: 2 };
-  const alerts = data?.recentAlerts || [];
-
-  return (
-    <div className="p-4 md:p-6 lg:p-gutter w-full h-full flex flex-col xl:flex-row gap-gutter">
-      {/* Left / Center Section */}
-      <div className="flex-1 flex flex-col gap-gutter min-w-0">
-        {/* Stats Row - 5 Cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-gutter">
-          {/* Stat Card 1: Water Coverage & Spread */}
-          <Link
-            to="/water-coverage"
-            className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs hover:border-primary transition-all cursor-pointer"
-          >
-            <div className="flex justify-between items-center text-on-surface-variant">
-              <span className="font-label-md text-label-md uppercase tracking-wider">Water Coverage</span>
-              <span className="material-symbols-outlined text-primary-container" data-icon="water">water</span>
-            </div>
-            <div className="flex items-baseline gap-sm">
-              <span className="font-headline-lg text-headline-lg text-on-surface">{waterSpread.coveragePercentage}%</span>
-              <span className="font-data-mono text-data-mono text-error flex items-center text-xs font-semibold">
-                <span className="material-symbols-outlined text-[14px]" data-icon="trending_up">trending_up</span>
-                {waterSpread.changeSincePreviousSurvey}
-              </span>
-            </div>
-            <div className="flex items-center gap-1 text-[11px] text-on-surface-variant font-medium">
-              <span>Spread: {waterSpread.trend} ({waterSpread.direction})</span>
-            </div>
-            <div className="absolute bottom-0 left-0 h-1 bg-primary-container w-[68%] transition-all"></div>
-          </Link>
-
-          {/* Stat Card 2: Affected Settlements */}
-          <Link
-            to="/affected-settlements"
-            className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs hover:border-error transition-all cursor-pointer"
-          >
-            <div className="flex justify-between items-center text-on-surface-variant">
-              <span className="font-label-md text-label-md uppercase tracking-wider">Affected Settlements</span>
-              <span className="material-symbols-outlined text-error" data-icon="location_city">location_city</span>
-            </div>
-            <div className="flex items-baseline gap-sm">
-              <span className="font-headline-lg text-headline-lg text-error">{settlements.totalCount}</span>
-              <span className="text-[11px] text-error font-medium">Zones Inundated</span>
-            </div>
-            <div className="text-[11px] text-on-surface-variant truncate font-medium">
-              Sector 12, Riverside +3
-            </div>
-            <div className="absolute bottom-0 left-0 h-1 bg-error w-full"></div>
-          </Link>
-
-          {/* Stat Card 3: Road Accessibility */}
-          <Link
-            to="/road-accessibility"
-            className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs hover:border-[#f59e0b] transition-all cursor-pointer"
-          >
-            <div className="flex justify-between items-center text-on-surface-variant">
-              <span className="font-label-md text-label-md uppercase tracking-wider">Road Accessibility</span>
-              <span className="material-symbols-outlined text-[#f59e0b]" data-icon="alt_route">alt_route</span>
-            </div>
-            <div className="flex items-baseline gap-sm">
-              <span className="font-headline-lg text-headline-lg text-on-surface">{roadAccessibility.overallPercentage}%</span>
-              <span className="text-[11px] text-on-surface-variant font-medium">Accessible</span>
-            </div>
-            <div className="text-[11px] text-on-surface-variant truncate font-medium">
-              {roadAccessibility.openRoads} Open · {roadAccessibility.blockedRoads} Blocked · {roadAccessibility.submergedRoads} Submerged
-            </div>
-            <div className="absolute bottom-0 left-0 h-1 bg-[#f59e0b] w-[62%] opacity-80"></div>
-          </Link>
-
-          {/* Stat Card 4: Infrastructure Impact */}
-          <Link
-            to="/infrastructure-impact"
-            className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs hover:border-primary transition-all cursor-pointer"
-          >
-            <div className="flex justify-between items-center text-on-surface-variant">
-              <span className="font-label-md text-label-md uppercase tracking-wider">Infra Impact</span>
-              <span className="material-symbols-outlined text-primary-container" data-icon="domain">domain</span>
-            </div>
-            <div className="flex items-baseline gap-sm">
-              <span className="font-headline-lg text-headline-lg text-on-surface">{infrastructureImpact.totalTracked}</span>
-              <span className="text-[11px] text-on-surface-variant font-medium">Assets Tracked</span>
-            </div>
-            <div className="text-[11px] text-on-surface-variant truncate font-medium">
-              {infrastructureImpact.atRisk} Risk · {infrastructureImpact.flooded} Flooded · {infrastructureImpact.accessible} Accessible
-            </div>
-            <div className="absolute bottom-0 left-0 h-1 bg-primary-container w-full opacity-30"></div>
-          </Link>
-
-          {/* Stat Card 5: Drones Available */}
-          <Link
-            to="/drone-missions"
-            className="bg-surface-container-lowest border border-outline-variant rounded-lg p-md flex flex-col gap-xs relative overflow-hidden group shadow-xs col-span-2 sm:col-span-1 hover:border-[#10b981] transition-all cursor-pointer"
-          >
-            <div className="flex justify-between items-center text-on-surface-variant">
-              <span className="font-label-md text-label-md uppercase tracking-wider">Drones Available</span>
-              <Logo className="w-8 h-7 text-[#10b981] shrink-0" />
-            </div>
-            <div className="flex items-baseline gap-sm">
-              <span className="font-headline-lg text-headline-lg text-on-surface">{dronesAvailable.active + dronesAvailable.standby}</span>
-              <span className="text-[11px] text-emerald-600 font-medium">
-                {liveTelemetry ? `DRONE-001 · ${liveTelemetry.battery}%` : 'Mission Ready'}
-              </span>
-            </div>
-            <div className="text-[11px] text-on-surface-variant truncate font-medium">
-              Drone-01 &amp; Drone-02
-            </div>
-            <div className="absolute bottom-0 left-0 h-1 bg-[#10b981] w-full opacity-50"></div>
-          </Link>
-        </div>
-
-        {/* Main Map Area */}
-        <div className="flex-1 bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden relative flex flex-col min-h-[420px]">
-          <div className="p-sm md:p-md border-b border-outline-variant flex flex-wrap justify-between items-center bg-surface-bright gap-2">
-            <h2 className="font-headline-md text-headline-md text-on-surface">Live GIS Map</h2>
-            <div className="flex flex-wrap gap-sm">
-              <span className="flex items-center gap-base px-sm py-1 rounded bg-error/10 border border-error text-error font-label-md text-label-md">
-                <span className="w-2 h-2 rounded-full bg-error"></span> Settlements (5)
-              </span>
-              <span className="flex items-center gap-base px-sm py-1 rounded bg-primary-container/10 border border-primary-container text-primary-container font-label-md text-label-md">
-                <span className="w-2 h-2 rounded-full bg-primary-container"></span> Water Spread (SE)
-              </span>
-              <span className="flex items-center gap-base px-sm py-1 rounded bg-[#f59e0b]/10 border border-[#f59e0b] text-[#f59e0b] font-label-md text-label-md">
-                <span className="w-2 h-2 rounded-full bg-[#f59e0b]"></span> Road Alerts (5)
-              </span>
-              <span className="flex items-center gap-base px-sm py-1 rounded bg-emerald-600/10 border border-emerald-600 text-emerald-700 font-label-md text-label-md">
-                <span className="w-2 h-2 rounded-full bg-emerald-600"></span> Infra Monitored (4)
-              </span>
-            </div>
-          </div>
-
-          <div className="flex-1 relative min-h-[360px] overflow-hidden rounded-b-lg" data-location="Sector 12">
-            <DisasterGoogleMap
-              layers={{
-                waterLevels: true,
-                waterSpread: true,
-                settlements: true,
-                roadStatus: true,
-                infrastructure: true,
-                activeAssets: true,
-                safeRoutes: true,
-              }}
-              className="w-full h-full min-h-[360px]"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Right Panel - Recent Alerts & Live Assessments */}
-      <div className="w-full xl:w-[320px] bg-surface-container-lowest border border-outline-variant rounded-lg flex flex-col shrink-0">
-        <div className="p-md border-b border-outline-variant bg-surface-bright flex justify-between items-center">
-          <h2 className="font-headline-md text-headline-md text-on-surface">Recent Alerts</h2>
-          <span className="text-[11px] font-mono text-on-surface-variant font-semibold">LIVE LOG</span>
-        </div>
-        <div className="flex-1 overflow-y-auto p-md flex flex-col gap-md">
-          {alerts.map((alert) => (
-            <div
-              key={alert.id}
-              className={`border border-outline-variant rounded-lg bg-surface-bright p-md flex flex-col gap-sm relative overflow-hidden shadow-xs ${
-                alert.severity === 'Critical' ? 'border-l-4 border-l-error' : ''
-              }`}
-            >
-              <div className="flex justify-between items-start">
-                <span
-                  className={`font-label-md text-label-md flex items-center gap-xs font-bold ${
-                    alert.severity === 'Critical'
-                      ? 'text-error'
-                      : alert.severity === 'Warning'
-                      ? 'text-[#f59e0b]'
-                      : 'text-primary'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[16px]">
-                    {alert.severity === 'Critical' ? 'warning' : alert.severity === 'Warning' ? 'deck' : 'info'}
-                  </span>
-                  {alert.title}
-                </span>
-                <span className="font-label-md text-label-md text-on-surface-variant shrink-0">{alert.time}</span>
-              </div>
-              <p className="font-body-md text-body-md text-on-surface text-xs leading-relaxed">{alert.body}</p>
-              {alert.area && (
-                <div className="font-data-mono text-[10px] text-on-surface-variant font-semibold">
-                  Area: {alert.area}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-};
+  const [data, setData] = useState<DashboardData | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
+  async function loadAssessment() { try { const latest = await getLatestAssessment(); const [flood, settlements, roads, infrastructure, response] = await Promise.all([getFloodAssessment(), getSettlementAssessment(), getRoadAssessment(), getInfrastructureAssessment(), getResponsePlan()]); setData({ latest, flood, settlements, roads, infrastructure, response }); window.dispatchEvent(new CustomEvent('assessment-updated', { detail: { recordedAt: latest.recordedAt } })); } catch { setData(null); } }
+  useEffect(() => { loadAssessment(); const report = () => downloadReport().catch((error) => setMessage(error instanceof Error ? error.message : 'Report download failed.')); window.addEventListener('download-report', report); return () => window.removeEventListener('download-report', report); }, []);
+  async function handleUpload(event: React.FormEvent) { event.preventDefault(); if (!file) return; setBusy(true); setMessage(''); try { await uploadDroneSurvey(file); await loadAssessment(); setFile(null); setMessage('Survey processed successfully.'); } catch (error) { setMessage(error instanceof Error ? error.message : 'The media assessment failed.'); } finally { setBusy(false); } }
+  const settlements = data?.settlements.settlements || [];
+  const assets = data?.infrastructure.assets || [];
+  const coordinates: [number, number] = data?.latest.latitude && data.latest.longitude ? [data.latest.latitude, data.latest.longitude] : defaultCenter;
+  const totalRoads = (data?.roads.openRoads || 0) + (data?.roads.blockedRoads || 0) + (data?.roads.submergedRoads || 0);
+  const observedAt = data ? new Date(data.latest.recordedAt).toLocaleString([], { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Awaiting survey';
+  return <div id="dashboard-top" className="mx-auto w-full max-w-[1600px] px-4 py-5 md:px-7 md:py-6">
+    <div className="mb-5 flex flex-wrap items-end justify-between gap-4"><div><p className="text-[10px] font-bold uppercase tracking-[0.16em] text-blue-700">Overview of flood impact based on drone survey</p><h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">Dashboard</h1></div><form onSubmit={handleUpload} className="flex items-center gap-2"><label className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 hover:border-blue-300"><Upload size={14} className="text-blue-700" /> {file ? file.name : 'Add survey'}<input type="file" accept="image/*,video/*" className="hidden" onChange={(event) => setFile(event.target.files?.[0] || null)} /></label>{file && <button disabled={busy} className="rounded-md bg-blue-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{busy ? 'Processing...' : 'Assess'}</button>}<button type="button" onClick={() => downloadReport().catch((error) => setMessage(error instanceof Error ? error.message : 'Report download failed.'))} disabled={!data} className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-600 disabled:opacity-40"><Download size={14} /> Report</button></form></div>
+    {message && <div className="mb-4 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-800">{message}</div>}
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"><StatCard icon={Waves} label="Total Flooded Area" value={data ? `${data.flood.floodAreaSqKm.toFixed(1)} km²` : '--'} note={data ? `${data.flood.coveragePercentage.toFixed(1)}% of surveyed area` : 'No survey recorded'} color="bg-blue-50 text-blue-600" /><StatCard icon={Users} label="Stranded Persons" value={data ? `${data.settlements.criticalAttention + data.settlements.highAttention}` : '--'} note={data ? `From ${data.settlements.observedCount} locations` : 'Awaiting assessment'} color="bg-emerald-50 text-emerald-600" /><StatCard icon={Home} label="Affected Settlements" value={data ? `${data.settlements.observedCount}` : '--'} note={data ? `Critical: ${data.settlements.criticalAttention} · Moderate: ${data.settlements.moderateAttention}` : 'Awaiting assessment'} color="bg-orange-50 text-orange-500" /><StatCard icon={Route} label="Roads Affected" value={data ? `${data.roads.blockedRoads + data.roads.submergedRoads} / ${totalRoads} km` : '--'} note={data ? `Blocked: ${data.roads.blockedRoads + data.roads.submergedRoads} km` : 'Awaiting assessment'} color="bg-violet-50 text-violet-600" /><StatCard icon={Building2} label="Infrastructure Damage" value={data ? `${data.infrastructure.atRisk + data.infrastructure.flooded}` : '--'} note={data ? `Severe: ${data.infrastructure.flooded} · Moderate: ${data.infrastructure.atRisk}` : 'Awaiting assessment'} color="bg-red-50 text-red-500" /></div>
+    <div className="mt-4 grid gap-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(320px,0.85fr)]"><Panel title="Flood Impact Map" action="Layers"><div className="relative overflow-hidden rounded-md"><MapContainer center={coordinates} zoom={10} scrollWheelZoom={false} className="h-[390px] w-full"><MapCenter coordinates={coordinates} /><TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />{settlements.slice(0, 10).map((item) => <Marker key={item.id} position={[item.latitude, item.longitude]}><Popup><strong>{item.name}</strong><br />{item.severity}</Popup></Marker>)}</MapContainer><div className="absolute bottom-3 left-3 z-[1000] rounded-md bg-white/95 p-3 text-[10px] shadow-lg"><p className="mb-2 font-bold text-slate-700">Legend</p><div className="grid grid-cols-2 gap-x-4 gap-y-1 text-slate-600"><span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-red-500" />Affected</span><span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" />Settlements</span><span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-blue-500" />Flooded area</span><span><i className="mr-1 inline-block h-2 w-2 rounded-full bg-orange-400" />Survey path</span></div></div></div></Panel><div className="space-y-4"><Panel title="Road Accessibility Summary" action="View Details"><div className="overflow-x-auto"><table className="w-full text-left text-[10px]"><thead className="border-b border-slate-100 text-slate-500"><tr><th className="pb-2">Road Type</th><th className="pb-2">Status</th><th className="pb-2">Alternate</th></tr></thead><tbody>{(data?.roads.roads || []).slice(0, 4).map((road) => <tr key={road.id} className="border-b border-slate-50"><td className="py-2 font-semibold text-slate-700">{road.name}</td><td className="py-2 text-emerald-600">{road.status}</td><td className="py-2 text-slate-500">{road.alternativeRoute || '--'}</td></tr>)}</tbody></table>{!data?.roads.roads.length && <p className="py-4 text-center text-xs text-slate-400">No road observations yet.</p>}</div></Panel><Panel title="Infrastructure Damage Summary" action="View Details"><div className="grid grid-cols-3 gap-2 text-center text-[10px]"><div className="rounded bg-red-50 p-3"><p className="text-red-500">Severe</p><p className="mt-1 text-lg font-extrabold text-red-700">{data?.infrastructure.flooded ?? '--'}</p></div><div className="rounded bg-amber-50 p-3"><p className="text-amber-600">Moderate</p><p className="mt-1 text-lg font-extrabold text-amber-700">{data?.infrastructure.atRisk ?? '--'}</p></div><div className="rounded bg-emerald-50 p-3"><p className="text-emerald-600">Accessible</p><p className="mt-1 text-lg font-extrabold text-emerald-700">{data?.infrastructure.accessible ?? '--'}</p></div></div></Panel><Panel title="Affected Settlements" action="View All"><div className="space-y-2">{settlements.slice(0, 5).map((item) => <div key={item.id} className="flex items-center justify-between border-b border-slate-50 pb-2 text-[10px]"><span className="font-semibold text-slate-700">{item.name}</span><span className={`rounded px-2 py-1 font-bold ${item.severity.toLowerCase().includes('critical') ? 'bg-red-50 text-red-600' : item.severity.toLowerCase().includes('moderate') ? 'bg-orange-50 text-orange-600' : 'bg-emerald-50 text-emerald-600'}`}>{item.severity}</span><span className="text-slate-500">{item.population}</span></div>)}{!settlements.length && <p className="py-4 text-center text-xs text-slate-400">No settlements identified yet.</p>}</div></Panel></div></div>
++    <div className="mt-4 grid gap-4 xl:grid-cols-[1.1fr_0.9fr]"><Panel title="Recent Survey Evidence" action="View All"><div className="grid grid-cols-2 gap-3 sm:grid-cols-4">{data?.latest.imagePath ? <><img src={assetUrl(data.latest.imagePath)} alt="Original drone survey" className="h-24 w-full rounded object-cover" /><img src={assetUrl(data.latest.annotatedImagePath)} alt="Annotated drone survey" className="h-24 w-full rounded object-cover" /></> : <div className="col-span-full flex h-24 items-center justify-center rounded bg-slate-50 text-xs text-slate-400">Upload a survey to populate evidence.</div>}<div className="hidden h-24 items-center justify-center rounded border border-dashed border-slate-200 text-[10px] text-slate-400 sm:flex"><Radio size={16} className="mr-1" /> Live feed</div><div className="hidden h-24 items-center justify-center rounded border border-dashed border-slate-200 text-[10px] text-slate-400 sm:flex"><MapPin size={16} className="mr-1" /> Field note</div></div><p className="mt-2 text-[10px] text-slate-400">Last survey: {observedAt}</p></Panel><Panel title="Generate Assessment Report"><div className="grid grid-cols-3 gap-2 text-center"><button onClick={() => downloadReport().catch((error) => setMessage(error instanceof Error ? error.message : 'Report download failed.'))} disabled={!data} className="flex flex-col items-center gap-2 rounded-md border border-slate-100 p-3 text-[10px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Download size={19} className="text-red-500" />Download PDF</button><button disabled={!data} className="flex flex-col items-center gap-2 rounded-md border border-slate-100 p-3 text-[10px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"><FileSpreadsheet size={19} className="text-emerald-600" />Download Excel</button><button disabled={!data} className="flex flex-col items-center gap-2 rounded-md border border-slate-100 p-3 text-[10px] font-bold text-slate-600 hover:bg-slate-50 disabled:opacity-40"><Map size={19} className="text-violet-600" />Download GeoJSON</button></div></Panel></div>
++    <p className="mt-5 flex items-center gap-2 text-[10px] text-slate-400"><AlertTriangle size={13} /> Assessment outputs support authority review. Operational decisions remain with designated disaster management authorities.</p>
++  </div>;
++};

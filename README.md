@@ -1,109 +1,109 @@
-# 🚁 Autonomous Disaster Response & Flood Surveillance Command Platform
+# Sky Guardian
 
-An enterprise-grade autonomous flood surveillance, drone telemetry, computer vision, and emergency rescue coordination platform built for rapid disaster response.
+## Drone-Assisted Flood Impact Assessment System
 
----
+Sky Guardian is a government disaster-management dashboard for NDMA, SDMA, DDMA, NDRF, and district authorities. It combines drone survey evidence, YOLO-based image analysis, flood-impact summaries, GIS visualization, and official report generation in one operational workspace.
 
-## 🌟 Architecture & Repository Structure
+The system is designed to support human decision-makers. It does not automate evacuation, rescue, deployment, or other operational decisions.
 
-This monorepo contains the complete end-to-end system:
+## Capabilities
+
+- Upload drone images and videos with immediate browser preview
+- Run YOLO inference on uploaded survey media
+- Return object detections and annotated evidence images
+- Display flooded area, detected people, affected settlements, blocked roads, and infrastructure damage
+- Center the map on embedded GPS metadata or surveyed coordinates
+- Review road, settlement, and infrastructure summaries
+- Export PDF, Excel-compatible CSV, and GeoJSON reports
+- Use a live-video connection state for future authority-approved streams
+
+## Architecture
 
 ```text
-├── frontend/             # React 19 + TypeScript + Vite + Tailwind CSS + Leaflet GIS Map
-│   ├── src/
-│   │   ├── api/          # REST API & Socket.IO WebSockets client
-│   │   ├── components/   # Interactive Leaflet GIS Map, AuthModal, Topbar, Sidebar
-│   │   ├── context/      # Google OAuth & Guest Mode AuthContext
-│   │   ├── pages/        # 14 Real-time Command & Intelligence Pages
-│   │   └── ...
-│   └── package.json
-│
-├── backend/              # Node.js + Express + TypeScript + Prisma ORM + Socket.IO
-│   ├── prisma/
-│   │   └── schema.prisma # PostgreSQL Database Models (10 Disaster Data Tables)
-│   ├── src/
-│   │   ├── routes/       # 14 REST Endpoints (Missions, Telemetry, Camps, Alerts, YOLOv8)
-│   │   ├── socket.ts     # Live WebSockets Engine (Telemetry, Camps, Alerts events)
-│   │   └── server.ts     # HTTP & WebSocket Server Entry Point
-│   └── package.json
-│
-└── html files/           # Reference Wireframes & Interactive Mockups
+frontend/                 Browser-facing government dashboard
+  index.html              Dashboard structure
+  app.js                  Upload, API, map, evidence, and export logic
+  styles.css              Dashboard styling
+backend/                  Node.js API and inference orchestrator
+  src/server.ts           HTTP server entry point
+  src/app.ts              Express application and static uploads
+  src/routes/analysis.routes.ts
+                          Upload, inference, assessment, and report routes
+  ml/inference.py         YOLO image/video inference worker
+  weights/                YOLO model weights
+  data/assessment-store.json
+                          Local assessment data store
+html files/               Reference dashboard screens
 ```
 
----
+## Requirements
 
-## 🚀 Key Modules & Capabilities
+- Node.js 18 or newer
+- Python 3.11 or newer
+- A local YOLO model at `backend/weights/yolov11_flood.pt`
+- `ffprobe` is optional and is used to read video GPS metadata
 
-1. **Live GIS Interactive Map**:
-   - Leaflet-powered GIS engine with **Satellite HD (Esri)**, **Tactical Dark**, and **Street Map** switcher.
-   - Dynamic flood polygon overlays with depth and spread rate metrics.
-   - Real-time animated drone flight marker tracking GPS telemetry over WebSockets.
-   - Integrated topbar search with coordinate parser and location auto-suggestions.
+## Run Locally
 
-2. **AI Vision (YOLOv8) Computer Vision Pipeline**:
-   - Neural aerial frame scanner for automated victim, rescue boat, and stranded vehicle detection.
-   - Dynamic pulsing computer vision bounding boxes with confidence scores.
-
-3. **Emergency Rescue Coordination & Response Planning**:
-   - Squad dispatch (NDRF, Swiftwater Rescue, Zodiac Boats, Paramedics).
-   - Dynamic status cycling (`En Route` ➔ `On Site` ➔ `Available`).
-
-4. **Relief Camps Oversight & Welfare Logistics**:
-   - Real-time camp occupancy and shelter capacity monitoring.
-   - Food and water reserve tracking with one-click ration replenishment.
-
-5. **Disaster Assessment Situation Report Exporter**:
-   - Automated 12-parameter situation assessment report generator.
-   - High-contrast printable document exporter with PDF download.
-
-6. **Authentication & Role-Based Access Control**:
-   - **Google Sign-In** via Google Identity Services (`@react-oauth/google`).
-   - **1-Click Guest Observer Mode** for public or evaluators monitoring.
-
----
-
-## 🛠️ Quick Start Guide
-
-### 1. Backend Setup
+### Backend
 
 ```bash
 cd backend
 npm install
-
-# Setup environment variables
-cp .env.example .env
-
-# Generate Prisma Client & Migrate Database
-npm run prisma:generate
-npm run prisma:push
-
-# Seed initial disaster data
-npm run seed
-
-# Run Backend Development Server
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
 npm run dev
 ```
 
-### 2. Frontend Setup
+The backend runs at `http://localhost:8000`.
+
+Useful endpoints:
+
+- `GET /health`
+- `POST /api/v1/analysis/upload`
+- `GET /api/v1/analysis/latest`
+- `GET /api/v1/assessment/flood`
+- `GET /api/v1/assessment/settlements`
+- `GET /api/v1/assessment/roads`
+- `GET /api/v1/assessment/infrastructure`
+- `GET /api/v1/report/download`
+
+### Frontend
+
+In a second terminal:
 
 ```bash
 cd frontend
-npm install
-
-# Run Frontend Development Server
-npm run dev
+npx vite --host 0.0.0.0
 ```
 
-The frontend will start at `http://localhost:5173`.
+Open `http://localhost:5173/`.
 
----
+The frontend calls the local backend at `http://localhost:8000/api/v1`. Update `frontend/app.js` if the backend is hosted elsewhere.
 
-## 🌐 Production Deployments & API Endpoints
+## Upload and Inference Flow
 
-- **Backend Live Base URL**: `https://drone-flood-backend.onrender.com/api/v1`
-- **Health Check**: `https://drone-flood-backend.onrender.com/health`
-- **Relief Camps API**: `https://drone-flood-backend.onrender.com/api/v1/camps`
-- **Field Units API**: `https://drone-flood-backend.onrender.com/api/v1/units`
-- **Emergency Alerts API**: `https://drone-flood-backend.onrender.com/api/v1/alerts`
-- **Drone Missions API**: `https://drone-flood-backend.onrender.com/api/v1/missions`
-- **Current Assessment PDF Route**: `https://drone-flood-backend.onrender.com/api/v1/report/current/pdf`
+1. The officer selects an image or video in the dashboard.
+2. The browser shows an immediate local preview.
+3. `POST /api/v1/analysis/upload` stores the file with Multer.
+4. The backend starts `backend/ml/inference.py` with the uploaded path and model path.
+5. YOLO returns detections as JSON and writes an annotated image.
+6. The backend stores the assessment snapshot.
+7. The dashboard reloads the latest assessment and updates the cards, map, and evidence gallery.
+
+Supported media types are JPEG, PNG, MP4, MOV, AVI, and WebM. Uploads are limited to 500 MB.
+
+## Reports
+
+- **PDF:** generated by the backend at `/api/v1/report/download`
+- **Excel:** downloaded as an Excel-compatible CSV from current API data
+- **GeoJSON:** generated in the browser from settlement coordinates returned by the API
+
+## Data and Git Hygiene
+
+Generated uploads, map caches, Python bytecode, training datasets, and experiment runs are intentionally ignored by Git. The training dataset is local-only and is not required to run the application when the model weights are present.
+
+## Operational Disclaimer
+
+Sky Guardian provides observations derived from drone imagery and computer-assisted analysis. Data should be verified by authorized personnel before operational use. Final decisions remain with the designated disaster-management authority.

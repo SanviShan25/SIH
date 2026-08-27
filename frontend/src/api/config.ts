@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'https://drone-flood-backend.onrender.com/api/v1';
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
 export const SOCKET_URL =
   import.meta.env.VITE_SOCKET_URL || 'https://drone-flood-backend.onrender.com';
@@ -15,7 +15,7 @@ export async function fetchApi<T>(endpoint: string, options?: RequestInit): Prom
     const res = await fetch(url, {
       ...options,
       headers: {
-        'Content-Type': 'application/json',
+        ...(options?.body instanceof FormData ? {} : { 'Content-Type': 'application/json' }),
         ...options?.headers,
       },
     });

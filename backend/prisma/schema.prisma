@@ -1,5 +1,3 @@
-// Prisma Schema for Sky Guardians Drone Flood Disaster Intelligence Backend
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,189 +7,67 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// 1. Hydrology & Inundation Snapshots
 model FloodSnapshot {
-  id                        String   @id @default(uuid())
-  recordedAt                DateTime @default(now())
-  timeLabel                 String   // e.g. "02:00 PM"
-  waterCoveragePct          Float    // e.g. 68.0
-  spreadTrend               String   // "Increasing" | "Stable" | "Decreasing"
-  spreadDirection           String   // "South-East"
-  changeRate                String   // "+13%"
-  flowVelocity              String   // "1.8 m/s"
-  peakHeight                String   // "3.2m"
-  affectedSettlementsCount  Int      // 5
-  roadAccessibilityPct      Float    // 62.0
-  openRoadsCount            Int      // 12
-  submergedRoadsCount       Int      // 3
-  isForecast                Boolean  @default(false)
+  id String @id @default(uuid())
+  recordedAt DateTime @default(now())
+  imagePath String
+  mediaType String @default("IMAGE")
+  framesProcessed Int @default(1)
+  latitude Float?
+  longitude Float?
+  annotatedImagePath String?
+  floodMaskImagePath String?
+  coveragePercentage Float
+  severity String
+  floodAreaSqKm Float
+  spreadTrend String
+  direction String
+  detectionsJson String
 }
 
-// 2. Inundation Catchment Zones
-model InundationZone {
-  id             String   @id // e.g. "Z-01"
-  name           String   // "Sector 12 Riverbank"
-  waterDepth     String   // "3.2m"
-  coveragePct    Float    // 88.0
-  flowDirection  String   // "South-East (1.8 m/s)"
-  status         String   // "Critical Rise" | "Elevated" | "Stable"
-  riskLevel      String   // "High" | "Medium" | "Low"
-  lastSurvey     String   // "14:30 UTC"
-  updatedAt      DateTime @updatedAt
-}
-
-// 3. Affected Settlements
 model Settlement {
-  id                  String   @id // e.g. "SET-01"
-  name                String   // "Sector 12 Village"
-  location            String   // "Sector 12 North Riverbank"
-  status              String   // "Flood Affected" | "Partially Submerged" | "Safe"
-  population          Int      // 620
-  households          Int      // 140
-  waterDepth          String   // "1.4m"
-  evacuationPriority  String   // "Immediate" | "High" | "Moderate" | "Low"
-  evacuatedPercentage Float    // 65.0
-  nearestCamp         String   // "Sector 14 Shelter (1.8 km)"
-  coordTop            String   // "34%"
-  coordLeft           String   // "46%"
-  latitude            Float?
-  longitude           Float?
-  lastSurvey          String   // "14:30 UTC"
-  updatedAt           DateTime @updatedAt
+  id String @id
+  name String
+  population Int
+  latitude Float
+  longitude Float
+  severity String
+  evacuationPriority String
 }
 
-// 4. Road Accessibility & Evacuation Routes
 model RoadRoute {
-  id               String   @id // e.g. "R-01"
-  name             String   // "Highway 4 Overpass"
-  category         String   // "Arterial Highway" | "Bridge Crossing" | "Secondary Road"
-  status           String   // "Open" | "Partially Affected" | "Submerged" | "Blocked"
-  waterDepth       String   // "1.2m"
-  clearance        String   // "Impassable" | "High Clearance (>4x4)" | "All Vehicles"
-  condition        String   // "Blocked by major debris & water surge"
-  alternativeRoute String   // "Northern Ridge Bypass Corridor"
-  lastSurvey       String   // "14:25 UTC"
-  updatedAt        DateTime @updatedAt
+  id String @id
+  name String
+  status String
+  alternativeRoute String?
+  geometryJson String?
 }
 
-// 5. Critical Infrastructure Assets
 model InfrastructureAsset {
-  id                   String   @id // e.g. "B-02"
-  name                 String   // "Bridge B-02 River Crossing"
-  type                 String   // "Bridge" | "Hospital" | "Government Building" | "Power Station" | "Water Utility"
-  location             String   // "Sector 12 River Crossing"
-  status               String   // "Accessible" | "Risk Detected" | "Flood Affected"
-  structuralIntegrity  String   // "Critical (60%)" | "Nominal (100%)"
-  waterLevel           String   // "1.8m (Pier Submerged)"
-  backupPower          String   // "Solar Active" | "Grid Online" | "Generator 100%"
-  detail               String   // "Structural Risk Detected"
-  actionTaken          String   // "Vehicular traffic cordoned"
-  coordTop             String   // "40%"
-  coordLeft            String   // "45%"
-  latitude             Float?
-  longitude            Float?
-  lastInspection       String   // "14:25 UTC"
-  updatedAt            DateTime @updatedAt
+  id String @id
+  asset String
+  type String
+  status String
+  confidence Float
+  latitude Float
+  longitude Float
 }
 
-// 6. Drone Missions & Telemetry (Stubs for Hardware Team)
-model Mission {
-  id            String   @id // e.g. "MISSION-DRONE-001"
-  droneId       String   // "DRONE-001"
-  targetArea    String   // "Riverbend District · Sector 12"
-  status        String   // "Active" | "Completed" | "Standby" | "Aborted"
-  batteryPct    Int      // 84
-  altitudeM     Int      // 120
-  speedKmh      Int      // 45
-  latitude      Float    // 28.6139
-  longitude     Float    // 77.2090
-  signalQuality Int      // 92
-  flightMode    String   // "AUTONOMOUS RECON"
-  assignedAt    DateTime @default(now())
-  completedAt   DateTime?
-}
-
-// 7. Computer Vision Detections (Stubs for ML Team)
-model DetectionFrame {
-  id                String   @id @default(uuid())
-  missionId         String   // "MISSION-DRONE-001"
-  imageUrl          String
-  annotatedImageUrl String?
-  capturedAt        DateTime @default(now())
-  personsCount      Int      @default(0)
-  vehiclesCount     Int      @default(0)
-  debrisCount       Int      @default(0)
-  confidenceAvg     Float    @default(0.92)
-  detectionsJson    String   // JSON string of bounding boxes
-  modelVersion      String   @default("YOLOv8-Disaster-v4.2")
-}
-
-// 8. Emergency Field Response Units
-model FieldUnit {
-  id                 String   @id // e.g. "U-01"
-  name               String   // "NDRF Team Alpha"
-  type               String   // "Special Rescue Squad"
-  location           String   // "Sector 12 (North)"
-  status             String   // "En Route" | "On Site" | "Available"
-  personnel          Int      // 8
-  assignedIncidentId String?
-  updatedAt          DateTime @updatedAt
-}
-
-// 9. Field Incidents & Historical Records
-model Incident {
-  id          String    @id // e.g. "INC-2023-1027-01"
-  date        String    // "2023-10-27 14:45 UTC"
-  sector      String    // "Sector 12 (North Riverbank)"
-  type        String    // "Flash Flood & Breach"
-  severity    String    // "Critical" | "Warning" | "Moderate"
-  victims     Int       // 7
-  status      String    // "Under Action" | "Resolved" | "Archived"
-  reportedAt  DateTime  @default(now())
-  resolvedAt  DateTime?
-}
-
-// 10. Relief Camps Oversight
-model ReliefCamp {
-  id            String   @id // e.g. "camp-1"
-  name          String   // "Sector 14 Shelter"
-  location      String   // "North District School"
-  status        String   // "Critical" | "Warning" | "Stable"
-  occupancy     Int      // 950
-  capacity      Int      // 1000
-  foodDays      String   // "1 Day"
-  foodCritical  Boolean  @default(false)
-  waterDays     String   // "2 Days"
-  waterCritical Boolean  @default(false)
-  medsStatus    String   // "Low" | "Ok" | "Adequate"
-  personnel     Int      // 24
-  latitude      Float?
-  longitude     Float?
-  updatedAt     DateTime @updatedAt
-}
-
-// 11. Emergency Alert Broadcasts
-model Alert {
-  id          String   @id // e.g. "ALT-1092"
-  title       String   // "Flash Flood Warning - Evacuate Zone 4"
-  severity    String   // "Critical" | "Warning" | "Info"
-  area        String   // "Lower Basin / Sectors 11-14"
-  time        String   // "14:15 UTC"
-  reach       String   // "12,450 / 15,000 Recipients"
-  body        String   // "Immediate evacuation order issued..."
-  channels    String   // "SMS, WhatsApp, Siren"
-  createdAt   DateTime @default(now())
-  isResolved  Boolean  @default(false)
-}
-
-// 12. Assessment Reports Archive
 model AssessmentReport {
-  id              String   @id @default(uuid())
-  eventId         String   @unique // e.g. "RPT-2023-1027-01"
-  sector          String   // "Sector 12"
-  generatedAt     String   // "2023-10-27 14:45 UTC"
-  source          String   // "Aerial Drone Telemetry & GIS Mesh"
-  parametersJson  String   // JSON string of all 12 standardized parameters
-  pdfUrl          String?
-  createdAt       DateTime @default(now())
+  id String @id @default(uuid())
+  eventId String @unique
+  generatedAt DateTime @default(now())
+  surveyArea String
+  overallRisk String
+  parametersJson String
+  pdfPath String?
+}
+
+model ResponsePlan {
+  id String @id @default(uuid())
+  createdAt DateTime @default(now())
+  priority String
+  actionsJson String
+  resourcesJson String
+  snapshotId String
 }

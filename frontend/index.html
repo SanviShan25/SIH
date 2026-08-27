@@ -1,18 +1,34 @@
 <!doctype html>
-<html lang="en" class="light">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SKY GUARDIANS - Flood Disaster Intelligence & Operations</title>
-    <!-- Google Fonts: Inter & Material Symbols Outlined -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet">
-  </head>
-  <body class="bg-surface text-on-surface font-body-md antialiased overflow-hidden min-h-screen">
-    <div id="root" class="h-screen w-screen overflow-hidden"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sky Guardian | Flood Impact Assessment</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <link rel="stylesheet" href="styles.css">
+  <style>@media (max-width: 680px){.workspace,.bottom-grid{grid-template-columns:1fr}.map-layers{justify-content:flex-start}.survey-control{margin-top:12px;flex-wrap:wrap}}</style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-mark">SG</span><div><strong>SKY GUARDIAN</strong><small>Drone Assisted Flood<br>Assessment System</small></div></div>
+    <nav id="navigation" aria-label="Assessment sections">
+      <a class="active" href="#dashboard">Dashboard</a><a href="#map-view">Map</a><a href="#affected-settlements">Settlements</a><a href="#road-accessibility">Roads</a><a href="#infrastructure-assessment">Infrastructure</a><a href="#government-report">Reports</a>
+    </nav>
+    <div class="authority-note">This system uses drone imagery and AI-assisted analysis to support disaster management authorities.</div>
+  </aside>
+  <main>
+    <header class="topbar"><div><span class="eyebrow">STATE DISASTER MANAGEMENT AUTHORITY</span><h2>Flood Impact Assessment Dashboard</h2></div><div class="top-actions"><span class="select-control">⌖ Assam · Dibrugarh</span><span id="last-assessment">27 Aug 2026, 08:08 AM</span><span class="profile">● District Authority⌄</span><span class="status">● System Online</span><button id="report-top" disabled>Generate report</button></div></header>
+    <div class="content" id="dashboard">
+      <section class="intro"><div><span class="eyebrow">DRONE SURVEY MONITORING</span><h1>Dashboard</h1><p>Overview of flood impact based on drone survey data and verified field observations.</p></div><div><div class="survey-modes"><button type="button" id="upload-mode" class="selected">Upload Survey</button><button type="button" id="live-mode">Live Video</button><button type="button" id="report-action" disabled>Generate Report</button></div><form id="upload-form" class="survey-control"><label><span>+ Choose survey evidence</span><input id="media" type="file" accept="image/jpeg,image/png,video/mp4,video/quicktime,video/x-msvideo,video/webm"></label><button class="primary" type="submit">Run Assessment</button></form><div id="live-state" class="live-feed hidden"><b>Live video feed</b><span>Connect an authority-approved drone stream to begin monitoring.</span></div></div></section>
+      <div id="upload-preview" class="upload-preview hidden"></div><div id="upload-fields" class="hidden"><span></span></div><div id="progress" class="hidden"><div class="progress-label"><span>Processing survey</span><span>In progress</span></div><div class="progress-track"><i></i></div></div><div id="message" class="message hidden"></div>
+      <section class="stats"><a href="#flood-assessment"><b>Total Flooded Area</b><strong id="coverage">--</strong><small>Survey coverage</small></a><a href="#survey-evidence"><b>People Detected</b><strong id="people-count">--</strong><small>Drone observations</small></a><a href="#affected-settlements"><b>Affected Settlements</b><strong id="settlements-count">--</strong><small>Settlement observations</small></a><a href="#road-accessibility"><b>Roads Affected</b><strong id="assets-count">--</strong><small>Accessibility assessment</small></a><a href="#infrastructure-assessment"><b>Infrastructure Damage</b><strong id="priority">--</strong><small>Assets requiring review</small></a></section>
+      <div class="workspace" id="map-view"><section class="panel map-panel"><div class="panel-title"><div><span class="eyebrow">GIS OVERVIEW</span><h2>Flood Impact Map</h2></div><div class="map-layers"><span>Flooded Areas</span><span>Roads</span><span>Settlements</span><span>Infrastructure</span><span>Survey Path</span></div></div><div id="map"></div><div class="map-legend"><b>Legend</b><span><i class="swatch flood"></i>Flooded Areas</span><span><i class="swatch people"></i>Settlements</span><span><i class="swatch road"></i>Roads</span><span><i class="swatch asset"></i>Infrastructure</span></div><p id="coordinates" class="muted">Survey location pending</p></section><aside class="analysis-column"><section id="road-accessibility" class="panel"><div class="panel-title"><h2>Road Accessibility Summary</h2><button>View Details</button></div><div class="mini-stats three"><div><small>Open</small><b id="road-open">--</b></div><div><small>Partially affected</small><b id="road-partial">--</b></div><div><small>Blocked</small><b id="road-blocked">--</b></div></div><div id="road-list" class="list muted">Road observations will appear after a survey.</div></section><section id="infrastructure-assessment" class="panel"><div class="panel-title"><h2>Infrastructure Damage Summary</h2><button>View Details</button></div><div class="mini-stats three"><div><small>Accessible</small><b id="infra-safe">--</b></div><div><small>Moderate</small><b id="infra-risk">--</b></div><div><small>Severe</small><b id="infra-affected">--</b></div></div><div id="infra-list" class="list muted">Infrastructure observations will appear after a survey.</div></section><section id="affected-settlements" class="panel"><div class="panel-title"><h2>Affected Settlements</h2><button>View All</button></div><div id="settlement-list"><div class="empty"><b>No settlements identified yet</b><span>Survey observations will appear here.</span></div></div></section></aside></div>
+      <div class="bottom-grid"><section id="survey-evidence" class="panel"><div class="panel-title"><div><span class="eyebrow">RECENT SURVEYS</span><h2>Survey Evidence Gallery</h2></div><button>View All</button></div><div id="survey-output" class="media-grid"><div class="empty"><b>Awaiting Drone Survey</b><span>Upload imagery to populate evidence.</span></div></div><div id="detections" class="hidden"></div><p id="survey-time" class="muted">No completed survey</p></section><section id="government-report" class="panel report-panel"><div class="panel-title"><div><span class="eyebrow">OFFICIAL DOCUMENTS</span><h2>Generate Assessment Report</h2></div></div><div class="report-actions"><button id="report-main" class="report-button" disabled>▣<span>Download<br>PDF</span></button><button id="report-excel" class="report-button" disabled>▤<span>Download<br>Excel</span></button><button id="report-geojson" class="report-button" disabled>⌖<span>Download<br>GeoJSON</span></button></div></section></div>
+      <section id="flood-assessment" class="panel data-panel"><div class="panel-title"><div><span class="eyebrow">ASSESSMENT DATA</span><h2>Flood Assessment</h2></div></div><div class="mini-stats"><div><small>Observed water coverage</small><b id="flood-coverage">--</b></div><div><small>Observed spread</small><b id="spread">Awaiting</b></div><div><small>Survey trend</small><b id="trend">Awaiting</b></div><div><small>Assessment status</small><b id="assessment-status">Awaiting</b></div></div></section>
+      <section id="response-planning" class="hidden"><ul id="response-list"></ul></section>
+      <footer class="footer-note">Assessment data is provided for official review. Operational decisions remain the responsibility of designated disaster management authorities.</footer>
+    </div>
+  </main>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="app.js"></script>
+</body>
 </html>
